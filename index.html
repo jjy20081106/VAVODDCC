@@ -33,6 +33,7 @@ h2{margin:0 0 10px;font-size:30px}.sub{margin:0;color:#cbd5e1;line-height:1.55}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
 .card,button{font:inherit;color:#fff;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07)}
 .card{min-height:136px;padding:13px;text-align:left}.card b{display:block;margin-bottom:7px}.card p{margin:0;color:#cbd5e1;font-size:13px;line-height:1.42}
+.choice{cursor:pointer}.choice.selected{border-color:#facc15;background:rgba(250,204,21,.16);box-shadow:0 0 0 2px rgba(250,204,21,.22) inset}
 button{cursor:pointer;font-weight:900;padding:13px}.primary{background:linear-gradient(135deg,#facc15,#22c55e);color:#111827;border:0}.danger{background:rgba(127,29,29,.76)}
 .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.toast{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);padding:10px 14px;border-radius:8px;background:#facc15;color:#111827;font-weight:1000;box-shadow:0 12px 30px rgba(0,0,0,.35);display:none}.toast.show{display:block}
 @media(max-width:720px){.cards{grid-template-columns:1fr}.loadout{display:none}.pill{font-size:12px;padding:7px 8px}.roundbtn{width:74px;height:74px}.roundbtn.small{width:56px;height:56px}.panel{padding:17px}}
@@ -65,7 +66,7 @@ button{cursor:pointer;font-weight:900;padding:13px}.primary{background:linear-gr
     <h1>용원고 생존일지</h1>
     <p class="sub">방과 후 용원고등학교에 좀비가 퍼졌습니다. 왼쪽 화면을 누르면 이동, 무기는 자동 공격, 오른쪽 버튼으로 회피와 비상종을 사용합니다.</p>
     <div class="cards">
-      <div class="card"><b>학교 무기</b><p>분필탄, 대걸레창, 소화기, 방송부 스피커 같은 학교 물건으로 좀비를 막습니다.</p></div>
+      <div class="card"><b>무기 12종</b><p>권총, 소총, 샷건, 저격총, 카타나, 수류탄, 화염방사기 같은 진짜 생존 무기를 사용합니다.</p></div>
       <div class="card"><b>레벨 카드</b><p>학년이 오를 때마다 무기 강화, 스킬, 패시브 중 하나를 고릅니다.</p></div>
       <div class="card"><b>영구 성장</b><p>엘리트 좀비가 떨어뜨리는 학생 배지로 다음 판 기본 능력을 올립니다.</p></div>
     </div>
@@ -73,6 +74,16 @@ button{cursor:pointer;font-weight:900;padding:13px}.primary{background:linear-gr
       <div class="card"><b>최고 생존</b><p id="best">00:00</p></div>
       <div class="card"><b>보유 배지</b><p id="bank">0</p></div>
       <div class="card"><b>학생 능력</b><p id="perm">체력 0 / 공격 0 / 자석 0</p></div>
+    </div>
+    <div class="cards">
+      <button class="card choice weaponChoice selected" data-weapon="pistol"><b>권총</b><p>초보 추천. 빠르고 안정적인 기본 사격 무기입니다.</p></button>
+      <button class="card choice weaponChoice" data-weapon="katana"><b>카타나</b><p>근접 방어형. 몰려드는 좀비를 주변에서 베어냅니다.</p></button>
+      <button class="card choice weaponChoice" data-weapon="rifle"><b>돌격소총</b><p>중거리 연사형. 가장 무난하게 무리를 녹입니다.</p></button>
+    </div>
+    <div class="cards">
+      <button class="card choice diffChoice selected" data-diff="easy"><b>쉬움</b><p>초반 좀비 수와 피해량이 낮습니다. 모바일 플레이 추천.</p></button>
+      <button class="card choice diffChoice" data-diff="normal"><b>보통</b><p>성장과 회피를 같이 챙겨야 하는 기본 난이도입니다.</p></button>
+      <button class="card choice diffChoice" data-diff="hard"><b>어려움</b><p>좀비가 더 많고 빠릅니다. 배지 보상이 조금 늘어납니다.</p></button>
     </div>
     <div class="btns"><button id="start" class="primary">등교하기</button><button id="sysBtn">학생 기록부</button></div>
   </div>
@@ -85,14 +96,26 @@ const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),$=id=>d
 let W=0,H=0,D=1,last=0,mode='menu',G=null,shake=0,flash=0,toastTimer=0;
 const keys=new Set(),joy={active:false,id:null,cx:0,cy:0,x:0,y:0},mouse={x:0,y:0,on:false};
 let save=loadSave();
+let selectedWeapon='pistol',selectedDiff='easy';
+const difficulties={
+easy:{name:'쉬움',hp:.72,dmg:.62,spd:.88,spawn:.64,badge:1},
+normal:{name:'보통',hp:.9,dmg:.82,spd:1,spawn:.84,badge:1.15},
+hard:{name:'어려움',hp:1.12,dmg:1.03,spd:1.12,spawn:1.08,badge:1.35}
+};
 const rarities=[['일반','#e5e7eb'],['희귀','#38bdf8'],['영웅','#c084fc'],['전설','#facc15']];
 const weapons={
-chalk:{name:'분필탄',color:'#e5e7eb',base:230,desc:['연사 속도 증가','2발 발사','관통 분필','분필 폭발','칠판 지우개 드론']},
-mop:{name:'대걸레창',color:'#22c55e',base:820,desc:['주변을 베는 대걸레','범위 증가','2개 회전','피격 보호막','청소 시간']},
-ext:{name:'소화기',color:'#f97316',base:1100,desc:['거품 분사','범위 증가','화상 제거 감속','넓은 폭발','복도 봉쇄']},
-speaker:{name:'방송부 스피커',color:'#a78bfa',base:1350,desc:['음파 충격','2중 음파','스턴','넉백','학교 방송']},
-phone:{name:'학생폰 드론',color:'#38bdf8',base:760,desc:['자동 추적 드론','드론 2대','빠른 충전','관통 광선','드론 편대']},
-desk:{name:'책상 투척',color:'#facc15',base:1500,desc:['묵직한 책상','넓은 충돌','파편 생성','엘리트 추가 피해','교실 붕괴']}
+pistol:{name:'권총',color:'#e5e7eb',base:260,desc:['연사 속도 증가','2연발','관통탄','치명타','듀얼 권총']},
+rifle:{name:'돌격소총',color:'#38bdf8',base:150,desc:['연사 강화','3점사','관통 사격','탄창 확장','제압 사격']},
+shotgun:{name:'샷건',color:'#f97316',base:720,desc:['산탄 발사','탄 수 증가','넉백 강화','폭발 산탄','전방 쓸기']},
+smg:{name:'기관단총',color:'#22c55e',base:95,desc:['초고속 연사','이동 사격','탄속 증가','흡혈 탄환','탄막']},
+sniper:{name:'저격소총',color:'#facc15',base:1150,desc:['강한 단발','관통 저격','엘리트 추가 피해','치명타','헤드샷']},
+katana:{name:'카타나',color:'#a78bfa',base:620,desc:['주변 베기','범위 증가','2연속 참격','보호막 회복','검기 폭풍']},
+spear:{name:'창',color:'#84cc16',base:680,desc:['긴 찌르기','관통 강화','후방 찌르기','스턴','창 비']},
+axe:{name:'전투도끼',color:'#fb7185',base:880,desc:['강한 회전 베기','출혈 피해','범위 증가','엘리트 추가 피해','도끼 폭풍']},
+grenade:{name:'수류탄',color:'#f59e0b',base:1450,desc:['범위 폭발','폭발 범위 증가','파편 생성','화상','연쇄 폭발']},
+flame:{name:'화염방사기',color:'#ef4444',base:520,desc:['전방 화염','지속 피해','감속','넓은 화염','복도 소각']},
+laser:{name:'레이저건',color:'#06b6d4',base:980,desc:['직선 관통 광선','사거리 증가','2갈래','화상 광선','회전 레이저']},
+drone:{name:'전투 드론',color:'#60a5fa',base:760,desc:['자동 추적','드론 2대','빠른 충전','관통 빔','드론 편대']}
 };
 const skills={
 stamina:{name:'체육부 체력',color:'#fb7185',desc:l=>`최대 체력 +${24*(l+1)}`},
@@ -100,6 +123,8 @@ speed:{name:'운동장 질주',color:'#22c55e',desc:l=>`이동 속도 +${8*(l+1)
 magnet:{name:'학생증 자석',color:'#facc15',desc:l=>`흡수 범위 +${36*(l+1)}`},
 focus:{name:'야자 집중력',color:'#38bdf8',desc:l=>`무기 쿨타임 -${7*(l+1)}%`},
 armor:{name:'두꺼운 교복',color:'#c084fc',desc:l=>`보호막 회복 +${12*(l+1)}%`}
+,
+power:{name:'매점 에너지',color:'#f97316',desc:l=>`모든 공격력 +${7*(l+1)}%`}
 };
 function loadSave(){try{return Object.assign({best:0,badge:0,perm:{hp:0,dmg:0,mag:0}},JSON.parse(localStorage.getItem(saveKey)||'{}'))}catch{return{best:0,badge:0,perm:{hp:0,dmg:0,mag:0}}}}
 function persist(){localStorage.setItem(saveKey,JSON.stringify(save));refreshMenu()}
@@ -110,10 +135,10 @@ function show(id){['menu','upgrade','system','over'].forEach(k=>$(k).classList.a
 function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1200)}
 function resize(){D=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;canvas.width=W*D;canvas.height=H*D;ctx.setTransform(D,0,0,D,0,0)}addEventListener('resize',resize);
 function newGame(){
-const maxHp=128+save.perm.hp*28;
-G={time:0,level:1,exp:0,next:12,badge:0,kills:0,difficulty:1,spawnAt:0,eliteAt:18000,bossAt:60000,waveText:'1교시',
-p:{x:0,y:0,vx:0,vy:0,r:15,hp:maxHp,maxHp,shield:40,maxShield:40,inv:0,dash:0,dashCd:0,specialCd:0,speed:245},
-weapons:{chalk:{lv:1,last:0}},skill:{stamina:0,speed:0,magnet:0,focus:0,armor:0},enemies:[],gems:[],bullets:[],fx:[]};
+const diff=difficulties[selectedDiff],maxHp=146+save.perm.hp*28+(selectedDiff==='easy'?24:0);
+G={time:0,level:1,exp:0,next:11,badge:0,kills:0,difficulty:1,diff,spawnAt:0,eliteAt:24000,bossAt:76000,waveText:'1교시',
+p:{x:0,y:0,vx:0,vy:0,r:15,hp:maxHp,maxHp,shield:52,maxShield:52,inv:0,dash:0,dashCd:0,specialCd:0,speed:252},
+weapons:{[selectedWeapon]:{lv:1,last:0}},skill:{stamina:0,speed:0,magnet:0,focus:0,armor:0,power:0},enemies:[],gems:[],bullets:[],fx:[]};
 mode='play';show(null);toast('용원고 1교시 시작');
 }
 function endGame(){mode='over';save.badge+=G.badge;save.best=Math.max(save.best,G.time);persist();$('summary').textContent=`생존 ${fmt(G.time)} / 처치 ${G.kills} / 획득 배지 ${G.badge}`;show('over')}
@@ -122,56 +147,80 @@ function inRange(x,y,r,n=99){return G.enemies.map(e=>({e,d:dist(x,y,e.x,e.y)})).
 function spawn(kind){
 let p=G.p,a=Math.random()*TAU,range=Math.max(W,H)*.72+150,type=kind||pickZombie(),elite=type==='teacher'||type==='guard'||type==='boss';
 let stat={student:[16,15,95,14],runner:[13,10,150,11],club:[24,34,72,22],nurse:[18,20,86,13],teacher:[30,78,62,30],guard:[34,120,55,34],boss:[50,520,48,46]}[type];
-let hp=(stat[1]+G.difficulty*5)*(type==='boss'?1.3:1);
-G.enemies.push({type,x:p.x+Math.cos(a)*range,y:p.y+Math.sin(a)*range,vx:0,vy:0,r:stat[0],hp,max:hp,spd:stat[2]+Math.min(70,G.difficulty*5),dmg:stat[3],elite,hit:0,slow:0,stun:0,burn:0,pulse:0});
+let hp=(stat[1]+G.difficulty*4.2)*(type==='boss'?1.2:1)*G.diff.hp;
+G.enemies.push({type,x:p.x+Math.cos(a)*range,y:p.y+Math.sin(a)*range,vx:0,vy:0,r:stat[0],hp,max:hp,spd:(stat[2]+Math.min(56,G.difficulty*4.2))*G.diff.spd,dmg:stat[3]*G.diff.dmg,elite,hit:0,slow:0,stun:0,burn:0,pulse:0});
 }
 function pickZombie(){let t=G.time/1000,r=Math.random();if(t>95&&r>.985)return 'guard';if(t>42&&r>.88)return 'club';if(t>26&&r>.78)return 'runner';if(t>62&&r>.84)return 'nurse';return 'student'}
-function drop(x,y,elite=false){G.gems.push({x,y,vx:0,vy:0,r:elite?8:5,val:elite?6:1,badge:elite?1:0})}
-function hurt(e,d,opt={}){if(!e)return;d*=1+save.perm.dmg*.11;if(e.type==='club')d*=.86;if(opt.elite&&e.elite)d*=1.55;e.hp-=d;e.hit=90;if(opt.slow)e.slow=Math.max(e.slow,opt.slow);if(opt.stun)e.stun=Math.max(e.stun,opt.stun);if(opt.burn)e.burn=Math.max(e.burn,1200);if(e.hp<=0){G.kills++;drop(e.x,e.y,e.elite);burst(e.x,e.y,e.elite?'#facc15':'#84cc16',e.r*2.5);G.enemies.splice(G.enemies.indexOf(e),1)}}
-function bullet(x,y,a,s,col,d,opt={}){G.bullets.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:opt.r||4,life:opt.life||1200,col,d,pierce:opt.pierce||0,homing:opt.homing,target:opt.target,boom:opt.boom||0,split:opt.split,slow:opt.slow,stun:opt.stun,burn:opt.burn,elite:opt.elite})}
+function drop(x,y,elite=false){G.gems.push({x,y,vx:0,vy:0,r:elite?8:5,val:elite?6:1,badge:elite?Math.ceil(G.diff.badge):0})}
+function hurt(e,d,opt={}){if(!e)return;d*=1+save.perm.dmg*.11+(G.skill.power||0)*.07;if(e.type==='club')d*=.86;if(opt.elite&&e.elite)d*=1.55;e.hp-=d;e.hit=90;if(d>2.2)addFx({type:'text',x:e.x,y:e.y-e.r-8,text:Math.ceil(d),col:opt.crit?'#facc15':'#f8fafc',life:420,max:420});if(opt.slow)e.slow=Math.max(e.slow,opt.slow);if(opt.stun)e.stun=Math.max(e.stun,opt.stun);if(opt.burn)e.burn=Math.max(e.burn,1200);if(opt.leech)G.p.hp=Math.min(G.p.maxHp,G.p.hp+d*.08);if(e.hp<=0){G.kills++;drop(e.x,e.y,e.elite);burst(e.x,e.y,e.elite?'#facc15':'#84cc16',e.r*2.5);G.enemies.splice(G.enemies.indexOf(e),1)}}
+function bullet(x,y,a,s,col,d,opt={}){G.bullets.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:opt.r||4,life:opt.life||1200,col,d,pierce:opt.pierce||0,homing:opt.homing,target:opt.target,boom:opt.boom||0,split:opt.split,slow:opt.slow,stun:opt.stun,burn:opt.burn,elite:opt.elite,leech:opt.leech})}
 function addFx(o){G.fx.push(o)}function burst(x,y,col,size){addFx({type:'ring',x,y,col,size,life:300,max:300})}
-function weaponDamage(id,lv){return{chalk:[1,1.25,1.5,1.8,2.2],mop:[1.7,2.1,2.5,3,3.8],ext:[2.4,3,3.5,4.5,5.6],speaker:[3.6,4.2,5.1,6.2,7.5],phone:[2.6,3.2,3.9,4.7,5.9],desk:[6,7.5,9,11,14]}[id][Math.min(5,lv)-1]}
+function weaponDamage(id,lv){return{
+pistol:[1.4,1.8,2.2,2.8,3.4],rifle:[.8,1,1.25,1.55,1.9],shotgun:[1.2,1.45,1.75,2.15,2.65],smg:[.52,.65,.82,1,1.22],
+sniper:[7,8.5,10.5,13,16],katana:[1.9,2.4,3,3.7,4.6],spear:[2.3,2.9,3.6,4.4,5.3],axe:[3.2,4,5,6.2,7.6],
+grenade:[6,7.5,9.2,11.4,14],flame:[.95,1.2,1.5,1.9,2.35],laser:[4.8,5.8,7,8.4,10],drone:[2.5,3.1,3.8,4.7,5.8]
+}[id][Math.min(5,lv)-1]}
 function cd(base){return base*Math.max(.42,1-(G.skill.focus||0)*.07-G.level*.003)}
 function tickWeapons(now,dt){
 for(const id in G.weapons){const w=G.weapons[id],def=weapons[id],p=G.p,lv=w.lv;
-if(id==='mop'){w.spin=(w.spin||0)+dt*.0032*(1+lv*.08);let count=lv>=3?2:1,rad=lv>=2?98:76;for(let i=0;i<count;i++){let a=w.spin+i*TAU/count,ox=p.x+Math.cos(a)*rad,oy=p.y+Math.sin(a)*rad;addFx({type:'slash',x:ox,y:oy,col:def.color,size:34,life:70,max:70,a});if(!w.hitAt||now>w.hitAt){inRange(p.x,p.y,rad+42,10).forEach(e=>hurt(e,weaponDamage(id,lv)));w.hitAt=now+250}}if(lv>=4)p.shield=Math.min(p.maxShield,p.shield+dt*.006)}
+if(id==='katana'||id==='axe'){w.spin=(w.spin||0)+dt*.0034*(1+lv*.08);let count=id==='katana'?(lv>=3?2:1):1,rad=id==='axe'?(lv>=3?112:92):(lv>=2?98:76);for(let i=0;i<count;i++){let a=w.spin+i*TAU/count,ox=p.x+Math.cos(a)*rad,oy=p.y+Math.sin(a)*rad;addFx({type:'slash',x:ox,y:oy,col:def.color,size:id==='axe'?42:34,life:80,max:80,a});if(!w.hitAt||now>w.hitAt){inRange(p.x,p.y,rad+44,14).forEach(e=>hurt(e,weaponDamage(id,lv),{slow:id==='axe'?320:0,elite:lv>=4}));w.hitAt=now+(id==='axe'?390:245)}}if(lv>=4&&id==='katana')p.shield=Math.min(p.maxShield,p.shield+dt*.006)}
 if(now-w.last<cd(def.base))continue;w.last=now;
-if(id==='chalk'){let count=lv>=2?2:1;for(let i=0;i<count;i++){let t=nearest();if(t)bullet(p.x,p.y,angle(p.x,p.y,t.x,t.y)+(i-.5)*.13,700,def.color,weaponDamage(id,lv),{pierce:lv>=3?1:0,boom:lv>=4?56:0})}if(lv>=5){let t=nearest();if(t)bullet(p.x-24,p.y-18,angle(p.x,p.y,t.x,t.y),620,'#94a3b8',1.8,{homing:true,target:t})}}
-if(id==='ext'){let t=nearest();if(t){let a=angle(p.x,p.y,t.x,t.y);for(let i=0;i<(lv>=2?5:3);i++)bullet(p.x,p.y,a+rand(-.24,.24),470,def.color,weaponDamage(id,lv)*.72,{r:7,slow:lv>=3?1000:520,burn:lv>=3,boom:lv>=4?64:0})}if(lv>=5)inRange(p.x,p.y,165,18).forEach(e=>hurt(e,1.2,{slow:1200}))}
-if(id==='speaker'){let n=lv>=2?2:1;for(let i=0;i<n;i++){addFx({type:'wave',x:p.x,y:p.y,col:def.color,size:110+i*65,life:360,max:360});inRange(p.x,p.y,155+i*70,18).forEach(e=>{let a=angle(p.x,p.y,e.x,e.y);e.vx+=Math.cos(a)*90;e.vy+=Math.sin(a)*90;hurt(e,weaponDamage(id,lv)*(.75+i*.25),{stun:lv>=3?420:0})})}if(lv>=5)inRange(p.x,p.y,420,30).forEach(e=>hurt(e,.9,{stun:180}))}
-if(id==='phone'){let count=lv>=2?2:1;for(let i=0;i<count;i++){let t=nearest();if(t)bullet(p.x+Math.cos(now/300+i*TAU/count)*42,p.y+Math.sin(now/300+i*TAU/count)*42,angle(p.x,p.y,t.x,t.y),520,def.color,weaponDamage(id,lv),{homing:true,target:t,pierce:lv>=4?1:0})}if(lv>=5)inRange(p.x,p.y,680,4).forEach(e=>laser(e,weaponDamage(id,lv)*.45,def.color))}
-if(id==='desk'){let t=nearest();if(t){bullet(p.x,p.y,angle(p.x,p.y,t.x,t.y),420,def.color,weaponDamage(id,lv),{r:13,boom:lv>=2?88:60,split:lv>=3,elite:lv>=4})}if(lv>=5)inRange(p.x,p.y,230,22).forEach(e=>hurt(e,1.1,{stun:160}))}
+if(id==='pistol'){let count=lv>=2?2:1;for(let i=0;i<count;i++){let t=nearest();if(t)bullet(p.x,p.y,angle(p.x,p.y,t.x,t.y)+(i-.5)*.12,720,def.color,weaponDamage(id,lv),{pierce:lv>=3?1:0,crit:lv>=4})}if(lv>=5){let t=nearest();if(t)bullet(p.x-28,p.y-16,angle(p.x,p.y,t.x,t.y),720,def.color,weaponDamage(id,lv)*.8)}}
+if(id==='rifle'){let t=nearest();if(t){let shots=lv>=2?3:2,a=angle(p.x,p.y,t.x,t.y);for(let i=0;i<shots;i++)bullet(p.x,p.y,a+rand(-.09,.09),760,def.color,weaponDamage(id,lv),{pierce:lv>=3?1:0,slow:lv>=5?180:0})}}
+if(id==='smg'){let t=nearest();if(t){let a=angle(p.x,p.y,t.x,t.y);for(let i=0;i<(lv>=5?4:2);i++)bullet(p.x,p.y,a+rand(-.18,.18),690,def.color,weaponDamage(id,lv),{leech:lv>=4})}}
+if(id==='shotgun'){let t=nearest();if(t){let a=angle(p.x,p.y,t.x,t.y),pel=lv>=2?8:5;for(let i=0;i<pel;i++)bullet(p.x,p.y,a+rand(-.42,.42),590,def.color,weaponDamage(id,lv),{r:5,slow:lv>=3?260:0,boom:lv>=4?38:0})}}
+if(id==='sniper'){let t=nearest();if(t)bullet(p.x,p.y,angle(p.x,p.y,t.x,t.y),980,def.color,weaponDamage(id,lv),{r:6,pierce:lv>=2?5:2,elite:lv>=3,boom:lv>=5?92:0,crit:lv>=4})}
+if(id==='spear'){let t=nearest();if(t){let a=angle(p.x,p.y,t.x,t.y);bullet(p.x,p.y,a,650,def.color,weaponDamage(id,lv),{r:8,pierce:lv>=2?4:2,stun:lv>=4?360:0});if(lv>=3)bullet(p.x,p.y,a+Math.PI,520,def.color,weaponDamage(id,lv)*.65,{r:7,pierce:2})}if(lv>=5)inRange(p.x,p.y,360,8).forEach(e=>hurt(e,1.4,{stun:120}))}
+if(id==='grenade'){let t=nearest();if(t){bullet(p.x,p.y,angle(p.x,p.y,t.x,t.y),430,def.color,weaponDamage(id,lv),{r:11,boom:lv>=2?128:92,split:lv>=3,burn:lv>=4})}if(lv>=5)inRange(p.x,p.y,170,14).forEach(e=>hurt(e,1.5,{burn:true}))}
+if(id==='flame'){let t=nearest();if(t){let a=angle(p.x,p.y,t.x,t.y);for(let i=0;i<(lv>=4?8:5);i++)bullet(p.x,p.y,a+rand(-.28,.28),420,def.color,weaponDamage(id,lv)*.7,{r:8,life:620,slow:lv>=3?850:420,burn:true,boom:lv>=5?34:0})}}
+if(id==='laser'){let t=nearest();if(t){laser(t,weaponDamage(id,lv),def.color);if(lv>=3)inRange(t.x,t.y,180,2).forEach(e=>laser(e,weaponDamage(id,lv)*.52,def.color))}if(lv>=5){w.spin=(w.spin||0)+.45;let x2=p.x+Math.cos(w.spin)*740,y2=p.y+Math.sin(w.spin)*740;addFx({type:'beam',x:p.x,y:p.y,x2,y2,col:def.color,size:10,life:150,max:150});G.enemies.forEach(e=>{if(lineDist(e.x,e.y,p.x,p.y,x2,y2)<24)hurt(e,weaponDamage(id,lv)*.35,{burn:true})})}}
+if(id==='drone'){let count=lv>=2?2:1;for(let i=0;i<count;i++){let t=nearest();if(t)bullet(p.x+Math.cos(now/300+i*TAU/count)*44,p.y+Math.sin(now/300+i*TAU/count)*44,angle(p.x,p.y,t.x,t.y),540,def.color,weaponDamage(id,lv),{homing:true,target:t,pierce:lv>=4?1:0})}if(lv>=5)inRange(p.x,p.y,680,4).forEach(e=>laser(e,weaponDamage(id,lv)*.45,def.color))}
 }}
 function laser(e,d,col){let p=G.p;addFx({type:'beam',x:p.x,y:p.y,x2:e.x,y2:e.y,col,size:12,life:120,max:120});hurt(e,d)}
+function lineDist(px,py,ax,ay,bx,by){let dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy,t=l?clamp(((px-ax)*dx+(py-ay)*dy)/l,0,1):0;return dist(px,py,ax+dx*t,ay+dy*t)}
 function openUpgrade(){
 mode='upgrade';const choices=[],owned=Object.keys(G.weapons),pool=Object.keys(weapons).filter(id=>owned.length<4||owned.includes(id));
-while(choices.length<3){let kind=Math.random()<.38?'s':'w',id=kind==='s'?Object.keys(skills)[Math.floor(Math.random()*5)]:pool[Math.floor(Math.random()*pool.length)];if(!choices.some(c=>c.kind===kind&&c.id===id))choices.push({kind,id,rarity:Math.min(3,Math.floor(Math.random()*4+(G.level>8?1:0)))})}
+while(choices.length<3){let skillIds=Object.keys(skills),kind=Math.random()<.42?'s':'w',id=kind==='s'?skillIds[Math.floor(Math.random()*skillIds.length)]:pool[Math.floor(Math.random()*pool.length)];if(!choices.some(c=>c.kind===kind&&c.id===id))choices.push({kind,id,rarity:Math.min(3,Math.floor(Math.random()*4+(G.level>8?1:0)))})}
 $('cards').innerHTML='';choices.forEach((c,i)=>{let info=c.kind==='w'?weapons[c.id]:skills[c.id],cur=c.kind==='w'?(G.weapons[c.id]?.lv||0):(G.skill[c.id]||0),lv=Math.min(5,cur+1),rar=rarities[c.rarity],b=document.createElement('button');b.className='card';b.innerHTML=`<b style="color:${info.color}">${i+1}. ${info.name} Lv.${lv}</b><p><span style="color:${rar[1]};font-weight:900">${rar[0]}</span><br>${c.kind==='w'?info.desc[lv-1]:info.desc(lv-1)}</p>`;b.onclick=()=>{if(c.kind==='w'){G.weapons[c.id]?G.weapons[c.id].lv=Math.min(5,G.weapons[c.id].lv+1):G.weapons[c.id]={lv:1,last:0}}else{G.skill[c.id]=Math.min(5,(G.skill[c.id]||0)+1);if(c.id==='stamina'){G.p.maxHp+=24;G.p.hp+=24}}mode='play';show(null);toast('카드 장착')};$('cards').appendChild(b)});show('upgrade')
 }
 function openSystem(){$('sysCards').innerHTML='';[['hp','체력장 우수','기본 체력 +28',2],['dmg','모의고사 만점','모든 피해 +11%',3],['mag','학생증 업그레이드','흡수 범위 +45',2]].forEach(([id,n,d,base])=>{let lv=save.perm[id],cost=base+lv*2,b=document.createElement('button');b.className='card';b.innerHTML=`<b>${n} Lv.${lv}</b><p>${d}<br>필요 배지: ${cost}</p>`;b.onclick=()=>{if(lv>=5)return toast('최대 기록');if(save.badge<cost)return toast('배지 부족');save.badge-=cost;save.perm[id]++;persist();openSystem()};$('sysCards').appendChild(b)});show('system')}
 function special(){if(!G||mode!=='play'||G.p.specialCd>0)return;G.p.specialCd=7800;shake=18;burst(G.p.x,G.p.y,'#facc15',260);toast('비상종 발동');inRange(G.p.x,G.p.y,360,80).forEach(e=>hurt(e,7,{stun:1300,slow:1800}))}
 function dash(){if(!G||mode!=='play'||G.p.dashCd>0)return;let p=G.p,ix=joy.x,iy=joy.y;if(Math.abs(ix)+Math.abs(iy)<.05){ix=mouse.on?mouse.x-W/2:1;iy=mouse.on?mouse.y-H/2:0}let l=Math.hypot(ix,iy)||1;p.vx=ix/l*790;p.vy=iy/l*790;p.dash=170;p.dashCd=1250;p.inv=Math.max(p.inv,250);burst(p.x,p.y,'#38bdf8',72)}
 function update(dt,now){
-if(!G||mode!=='play')return;G.time+=dt;G.difficulty=1+G.time/21000;G.waveText=(Math.floor(G.time/30000)+1)+'교시';let p=G.p;
+if(!G||mode!=='play')return;G.time+=dt;G.difficulty=1+G.time/32000;G.waveText=(Math.floor(G.time/36000)+1)+'교시';let p=G.p;
 let ix=0,iy=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))ix--;if(keys.has('KeyD')||keys.has('ArrowRight'))ix++;if(keys.has('KeyW')||keys.has('ArrowUp'))iy--;if(keys.has('KeyS')||keys.has('ArrowDown'))iy++;ix+=joy.x;iy+=joy.y;let l=Math.hypot(ix,iy)||1,spd=p.speed*(1+(G.skill.speed||0)*.08)*(p.dash>0?2.9:1);p.vx+=(ix/l*spd-p.vx)*.18;p.vy+=(iy/l*spd-p.vy)*.18;if(Math.abs(ix)+Math.abs(iy)<.05){p.vx*=.9;p.vy*=.9}p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.inv=Math.max(0,p.inv-dt);p.dash=Math.max(0,p.dash-dt);p.dashCd=Math.max(0,p.dashCd-dt);p.specialCd=Math.max(0,p.specialCd-dt);p.shield=Math.min(p.maxShield,p.shield+dt*(.004+.0005*(G.skill.armor||0)));
 $('dash').classList.toggle('ready',p.dashCd<=0);$('special').classList.toggle('ready',p.specialCd<=0);
-if(now>G.spawnAt){let count=Math.floor(1+G.difficulty*.42);for(let i=0;i<count;i++)spawn();G.spawnAt=now+Math.max(190,610-G.difficulty*24)}
-if(G.time>G.eliteAt){G.eliteAt+=21000;spawn(Math.random()<.55?'teacher':'guard');toast('선생님 좀비 출현')}
-if(G.time>G.bossAt){G.bossAt+=62000;spawn('boss');toast('교감 좀비 난입')}
-for(const e of [...G.enemies]){e.hit=Math.max(0,e.hit-dt);e.slow=Math.max(0,e.slow-dt);e.stun=Math.max(0,e.stun-dt);if(e.burn>0){e.burn-=dt;if(!e.burnTick||now>e.burnTick){e.burnTick=now+300;hurt(e,.7)}}if(e.stun<=0){let a=angle(e.x,e.y,p.x,p.y),s=e.spd*(e.slow>0?.45:1);if(e.type==='runner')s*=1.16;e.vx+=(Math.cos(a)*s-e.vx)*.058;e.vy+=(Math.sin(a)*s-e.vy)*.058;e.x+=e.vx*dt/1000;e.y+=e.vy*dt/1000}if(e.type==='nurse'&&(!e.healAt||now>e.healAt)){e.healAt=now+1700;inRange(e.x,e.y,120,5).forEach(z=>z.hp=Math.min(z.max,z.hp+5));addFx({type:'ring',x:e.x,y:e.y,col:'#ec4899',size:90,life:260,max:260})}if(dist(e.x,e.y,p.x,p.y)<e.r+p.r&&p.inv<=0){let hit=e.dmg;if(p.shield>0){let u=Math.min(hit,p.shield);p.shield-=u;hit-=u}p.hp-=hit;p.inv=610;shake=14;flash=180;if(p.hp<=0)endGame()}}
+if(now>G.spawnAt){let count=Math.max(1,Math.floor((1+G.difficulty*.34)*G.diff.spawn));for(let i=0;i<count;i++)spawn();G.spawnAt=now+Math.max(260,780-G.difficulty*22)}
+if(G.time>G.eliteAt){G.eliteAt+=26000;spawn(Math.random()<.55?'teacher':'guard');toast('선생님 좀비 출현')}
+if(G.time>G.bossAt){G.bossAt+=76000;spawn('boss');toast('교감 좀비 난입')}
+for(const e of [...G.enemies]){e.hit=Math.max(0,e.hit-dt);e.slow=Math.max(0,e.slow-dt);e.stun=Math.max(0,e.stun-dt);if(e.burn>0){e.burn-=dt;if(!e.burnTick||now>e.burnTick){e.burnTick=now+300;hurt(e,.7)}}if(e.stun<=0){let a=angle(e.x,e.y,p.x,p.y),s=e.spd*(e.slow>0?.45:1);if(e.type==='runner')s*=1.12;e.vx+=(Math.cos(a)*s-e.vx)*.052;e.vy+=(Math.sin(a)*s-e.vy)*.052;e.x+=e.vx*dt/1000;e.y+=e.vy*dt/1000}if(e.type==='nurse'&&(!e.healAt||now>e.healAt)){e.healAt=now+1900;inRange(e.x,e.y,120,5).forEach(z=>z.hp=Math.min(z.max,z.hp+4));addFx({type:'ring',x:e.x,y:e.y,col:'#ec4899',size:90,life:260,max:260})}if(dist(e.x,e.y,p.x,p.y)<e.r+p.r&&p.inv<=0){let raw=e.dmg,hit=raw,blocked=0;if(p.shield>0){blocked=Math.min(hit,p.shield);p.shield-=blocked;hit-=blocked}p.hp-=hit;p.inv=720;shake=18;flash=260;addFx({type:'text',x:p.x,y:p.y-34,text:hit>0?'-'+Math.ceil(hit):'방어',col:hit>0?'#ef4444':'#38bdf8',life:520,max:520});burst(p.x,p.y,hit>0?'#ef4444':'#38bdf8',68);if(p.hp<=0)endGame()}}
 tickWeapons(now,dt);
-for(const b of [...G.bullets]){b.life-=dt;if(b.homing&&b.target&&G.enemies.includes(b.target)){let a=angle(b.x,b.y,b.target.x,b.target.y);b.vx+=(Math.cos(a)*530-b.vx)*.08;b.vy+=(Math.sin(a)*530-b.vy)*.08}b.x+=b.vx*dt/1000;b.y+=b.vy*dt/1000;addFx({type:'trail',x:b.x,y:b.y,col:b.col,size:b.r*1.5,life:80,max:80});for(const e of [...G.enemies])if(dist(b.x,b.y,e.x,e.y)<b.r+e.r){hurt(e,b.d,{slow:b.slow,stun:b.stun,burn:b.burn,elite:b.elite});if(b.boom){burst(b.x,b.y,b.col,b.boom);inRange(b.x,b.y,b.boom,14).forEach(t=>hurt(t,b.d*.45,{slow:b.slow}))}if(b.split)inRange(b.x,b.y,500,4).forEach(t=>bullet(b.x,b.y,angle(b.x,b.y,t.x,t.y),460,b.col,b.d*.35,{homing:true,target:t}));if(b.pierce>0)b.pierce--;else b.life=-1;break}if(b.life<=0)G.bullets.splice(G.bullets.indexOf(b),1)}
+for(const b of [...G.bullets]){b.life-=dt;if(b.homing&&b.target&&G.enemies.includes(b.target)){let a=angle(b.x,b.y,b.target.x,b.target.y);b.vx+=(Math.cos(a)*530-b.vx)*.08;b.vy+=(Math.sin(a)*530-b.vy)*.08}b.x+=b.vx*dt/1000;b.y+=b.vy*dt/1000;addFx({type:'trail',x:b.x,y:b.y,col:b.col,size:b.r*1.5,life:80,max:80});for(const e of [...G.enemies])if(dist(b.x,b.y,e.x,e.y)<b.r+e.r){hurt(e,b.d,{slow:b.slow,stun:b.stun,burn:b.burn,elite:b.elite,leech:b.leech});if(b.boom){burst(b.x,b.y,b.col,b.boom);inRange(b.x,b.y,b.boom,14).forEach(t=>hurt(t,b.d*.45,{slow:b.slow,leech:b.leech}))}if(b.split)inRange(b.x,b.y,500,4).forEach(t=>bullet(b.x,b.y,angle(b.x,b.y,t.x,t.y),460,b.col,b.d*.35,{homing:true,target:t}));if(b.pierce>0)b.pierce--;else b.life=-1;break}if(b.life<=0)G.bullets.splice(G.bullets.indexOf(b),1)}
 const mag=126+save.perm.mag*45+(G.skill.magnet||0)*36;for(const g of [...G.gems]){let d=dist(g.x,g.y,p.x,p.y);if(d<mag){let a=angle(g.x,g.y,p.x,p.y),s=390+(mag-d)*4;g.vx+=Math.cos(a)*s*dt/1000;g.vy+=Math.sin(a)*s*dt/1000}g.x+=g.vx*dt/1000;g.y+=g.vy*dt/1000;if(d<p.r+g.r+8){G.exp+=g.val;G.badge+=g.badge;if(G.exp>=G.next){G.exp-=G.next;G.level++;G.next=Math.floor(G.next*1.32+7);openUpgrade()}G.gems.splice(G.gems.indexOf(g),1)}}
 for(const f of [...G.fx]){f.life-=dt;if(f.life<=0)G.fx.splice(G.fx.indexOf(f),1)}shake=Math.max(0,shake-dt*.06);flash=Math.max(0,flash-dt);hud()
 }
 function hud(){let p=G.p;$('hp').style.width=clamp(p.hp/p.maxHp*100,0,100)+'%';$('shield').style.width=clamp(p.shield/p.maxShield*100,0,100)+'%';$('xp').style.width=clamp(G.exp/G.next*100,0,100)+'%';$('lv').textContent=G.level;$('time').textContent=fmt(G.time);$('core').textContent=G.badge;$('loadout').innerHTML=Object.entries(G.weapons).map(([id,w])=>`<span style="color:${weapons[id].color}">${weapons[id].name} Lv.${w.lv}</span>`).join('')+`<span>${G.waveText}</span>`}
-function draw(){ctx.clearRect(0,0,W,H);let p=G?.p||{x:0,y:0},sx=W/2-p.x+(shake?(Math.random()-.5)*shake:0),sy=H/2-p.y+(shake?(Math.random()-.5)*shake:0);ctx.save();ctx.translate(sx,sy);drawSchool(p.x,p.y);if(G){G.gems.forEach(drawGem);G.fx.forEach(drawFx);G.bullets.forEach(drawBullet);G.enemies.forEach(drawEnemy);drawPlayer(p)}ctx.restore();if(flash>0){ctx.fillStyle=`rgba(239,68,68,${flash/900})`;ctx.fillRect(0,0,W,H)}}
-function drawSchool(px,py){ctx.fillStyle='#15181f';ctx.fillRect(px-W,py-H,W*2,H*2);let size=180;for(let x=Math.floor((px-W)/size)*size;x<px+W;x+=size){for(let y=Math.floor((py-H)/size)*size;y<py+H;y+=size){let alt=((x/size+y/size)&1);ctx.fillStyle=alt?'#1f242d':'#191d25';ctx.fillRect(x,y,size,size);ctx.strokeStyle='rgba(255,255,255,.06)';ctx.strokeRect(x,y,size,size);if(alt){ctx.fillStyle='rgba(250,204,21,.08)';ctx.fillRect(x+18,y+26,54,30);ctx.fillRect(x+96,y+112,62,24)}else{ctx.fillStyle='rgba(56,189,248,.08)';ctx.fillRect(x+18,y+20,12,80);ctx.fillRect(x+38,y+20,12,80);ctx.fillRect(x+58,y+20,12,80)}}}ctx.fillStyle='rgba(250,204,21,.12)';ctx.fillRect(px-W,Math.floor(py/360)*360-18,W*2,36);ctx.fillStyle='rgba(248,250,252,.14)';ctx.font='800 18px system-ui';ctx.fillText('용원고 복도',Math.floor(px/360)*360+18,Math.floor(py/360)*360+7)}
+function draw(){ctx.clearRect(0,0,W,H);let p=G?.p||{x:0,y:0},sx=W/2-p.x+(shake?(Math.random()-.5)*shake:0),sy=H/2-p.y+(shake?(Math.random()-.5)*shake:0);ctx.save();ctx.translate(sx,sy);drawSchool(p.x,p.y);if(G){G.gems.forEach(drawGem);G.fx.forEach(drawFx);G.bullets.forEach(drawBullet);G.enemies.forEach(drawEnemy);drawPlayer(p)}ctx.restore();if(flash>0){let a=flash/760;ctx.fillStyle=`rgba(239,68,68,${a})`;ctx.fillRect(0,0,W,H);ctx.strokeStyle=`rgba(255,255,255,${a*.8})`;ctx.lineWidth=10;ctx.strokeRect(5,5,W-10,H-10)}}
+function drawSchool(px,py){
+ctx.fillStyle='#171a20';ctx.fillRect(px-W,py-H,W*2,H*2);
+let tile=72;for(let x=Math.floor((px-W)/tile)*tile;x<px+W;x+=tile){for(let y=Math.floor((py-H)/tile)*tile;y<py+H;y+=tile){let n=((x/tile+y/tile)&1);ctx.fillStyle=n?'#20242c':'#1b1f26';ctx.fillRect(x,y,tile,tile);ctx.strokeStyle='rgba(255,255,255,.035)';ctx.strokeRect(x,y,tile,tile)}}
+let hallY=Math.floor(py/420)*420, hallX=Math.floor(px/520)*520;
+ctx.fillStyle='rgba(250,204,21,.14)';ctx.fillRect(px-W,hallY-24,W*2,48);
+ctx.fillStyle='rgba(15,23,42,.7)';ctx.fillRect(hallX-34,py-H,68,H*2);
+ctx.strokeStyle='rgba(250,204,21,.28)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(px-W,hallY);ctx.lineTo(px+W,hallY);ctx.moveTo(hallX,py-H);ctx.lineTo(hallX,py+H);ctx.stroke();
+for(let x=Math.floor((px-W)/360)*360;x<px+W;x+=360){for(let y=Math.floor((py-H)/420)*420;y<py+H;y+=420){
+ctx.fillStyle='rgba(31,41,55,.82)';ctx.fillRect(x+36,y+64,116,72);ctx.fillStyle='rgba(56,189,248,.16)';ctx.fillRect(x+48,y+76,92,42);ctx.fillStyle='rgba(248,250,252,.1)';ctx.fillRect(x+48,y+76,92,5);
+ctx.fillStyle='rgba(120,53,15,.56)';ctx.fillRect(x+204,y+74,82,48);ctx.fillRect(x+218,y+128,58,8);
+ctx.fillStyle='rgba(59,130,246,.13)';for(let i=0;i<4;i++)ctx.fillRect(x+38+i*25,y+248,18,58);
+ctx.fillStyle='rgba(15,23,42,.82)';ctx.fillRect(x+178,y+232,128,64);ctx.strokeStyle='rgba(255,255,255,.09)';ctx.strokeRect(x+178,y+232,128,64);ctx.fillStyle='rgba(250,204,21,.3)';ctx.font='800 14px system-ui';ctx.fillText('2학년 '+((Math.abs(x/360+y/420)%7)+1)+'반',x+194,y+270);
+}}
+ctx.fillStyle='rgba(248,250,252,.16)';ctx.font='900 20px system-ui';ctx.fillText('용원고등학교 본관',hallX+22,hallY-32);ctx.font='800 15px system-ui';ctx.fillText('복도 / 교실 / 사물함',hallX+22,hallY+40);
+}
 function circle(o,col,r=o.r){ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(o.x,o.y,r,0,TAU);ctx.fill();ctx.shadowBlur=0}
-function drawPlayer(p){circle(p,'#38bdf8');ctx.fillStyle='#f8fafc';ctx.fillRect(p.x-7,p.y-18,14,6);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+1,0,TAU);ctx.stroke();if(p.shield>2){ctx.strokeStyle='rgba(56,189,248,.48)';ctx.beginPath();ctx.arc(p.x,p.y,p.r+10,0,TAU);ctx.stroke()}}
+function drawPlayer(p){circle(p,p.inv>0&&Math.floor(p.inv/80)%2?'#ef4444':'#38bdf8');ctx.fillStyle='#f8fafc';ctx.fillRect(p.x-7,p.y-18,14,6);ctx.strokeStyle=p.inv>0?'#facc15':'#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+1,0,TAU);ctx.stroke();if(p.shield>2){ctx.strokeStyle='rgba(56,189,248,.48)';ctx.beginPath();ctx.arc(p.x,p.y,p.r+10,0,TAU);ctx.stroke()}}
 function drawEnemy(e){let col={student:'#84cc16',runner:'#f97316',club:'#ef4444',nurse:'#ec4899',teacher:'#a855f7',guard:'#facc15',boss:'#fb7185'}[e.type];circle(e,e.hit?'#fff':col);ctx.fillStyle='rgba(0,0,0,.58)';ctx.fillRect(e.x-e.r,e.y-e.r-10,e.r*2,4);ctx.fillStyle=col;ctx.fillRect(e.x-e.r,e.y-e.r-10,e.r*2*clamp(e.hp/e.max,0,1),4);ctx.fillStyle='#111827';ctx.fillRect(e.x-5,e.y-4,3,3);ctx.fillRect(e.x+4,e.y-4,3,3)}
 function drawGem(g){circle(g,g.badge?'#facc15':'#22c55e',g.r)}function drawBullet(b){circle(b,b.col,b.r)}
-function drawFx(f){let a=clamp(f.life/f.max,0,1);ctx.save();ctx.globalAlpha=a;ctx.strokeStyle=f.col;ctx.fillStyle=f.col;ctx.lineWidth=3;if(f.type==='ring'||f.type==='wave'){ctx.beginPath();ctx.arc(f.x,f.y,f.size*(1.15-a*.5),0,TAU);ctx.stroke()}else if(f.type==='beam'){ctx.lineWidth=f.size*a;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x2,f.y2);ctx.stroke()}else if(f.type==='slash'){ctx.lineWidth=9*a;ctx.beginPath();ctx.arc(f.x,f.y,f.size*.65,f.a-.9,f.a+.9);ctx.stroke()}else{ctx.beginPath();ctx.arc(f.x,f.y,f.size*(1-a),0,TAU);ctx.fill()}ctx.restore()}
+function drawFx(f){let a=clamp(f.life/f.max,0,1);ctx.save();ctx.globalAlpha=a;ctx.strokeStyle=f.col;ctx.fillStyle=f.col;ctx.lineWidth=3;if(f.type==='text'){ctx.font='900 18px system-ui';ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y-(1-a)*24)}else if(f.type==='ring'||f.type==='wave'){ctx.beginPath();ctx.arc(f.x,f.y,f.size*(1.15-a*.5),0,TAU);ctx.stroke()}else if(f.type==='beam'){ctx.lineWidth=f.size*a;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x2,f.y2);ctx.stroke()}else if(f.type==='slash'){ctx.lineWidth=9*a;ctx.beginPath();ctx.arc(f.x,f.y,f.size*.65,f.a-.9,f.a+.9);ctx.stroke()}else{ctx.beginPath();ctx.arc(f.x,f.y,f.size*(1-a),0,TAU);ctx.fill()}ctx.restore()}
 function loop(now){let dt=Math.min(34,now-last||16);last=now;update(dt,now);draw();requestAnimationFrame(loop)}
 function startJoy(e){if(e.clientX>W*.72)return;joy.active=true;joy.id=e.pointerId;joy.cx=e.clientX;joy.cy=e.clientY;joy.x=0;joy.y=0;$('joy').style.display='block';$('joy').style.left=(joy.cx-68)+'px';$('joy').style.top=(joy.cy-68)+'px';$('knob').style.transform='translate(0,0)';canvas.setPointerCapture(e.pointerId)}
 function moveJoy(e){mouse.x=e.clientX;mouse.y=e.clientY;mouse.on=true;if(!joy.active||joy.id!==e.pointerId)return;let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy,l=Math.hypot(dx,dy)||1,m=Math.min(44,l);joy.x=dx/l*m/44;joy.y=dy/l*m/44;$('knob').style.transform=`translate(${joy.x*44}px,${joy.y*44}px)`}
@@ -179,6 +228,8 @@ function endJoy(e){if(joy.id!==e.pointerId)return;joy.active=false;joy.id=null;j
 canvas.addEventListener('pointerdown',startJoy);canvas.addEventListener('pointermove',moveJoy);canvas.addEventListener('pointerup',endJoy);canvas.addEventListener('pointercancel',endJoy);canvas.addEventListener('pointerleave',()=>mouse.on=false);
 addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='Space'){e.preventDefault();dash()}if(e.code==='KeyE')special();if(mode==='upgrade'&&['Digit1','Digit2','Digit3'].includes(e.code)){let b=document.querySelectorAll('#cards .card')[Number(e.code.at(-1))-1];if(b)b.click()}});addEventListener('keyup',e=>keys.delete(e.code));
 $('dash').onclick=dash;$('special').onclick=special;$('start').onclick=newGame;$('retry').onclick=newGame;$('toMenu').onclick=()=>{mode='menu';G=null;show('menu');refreshMenu()};$('sysBtn').onclick=openSystem;$('back').onclick=()=>{show('menu');refreshMenu()};$('reset').onclick=()=>{save={best:0,badge:0,perm:{hp:0,dmg:0,mag:0}};persist();openSystem()};
+document.querySelectorAll('.weaponChoice').forEach(b=>b.onclick=()=>{selectedWeapon=b.dataset.weapon;document.querySelectorAll('.weaponChoice').forEach(x=>x.classList.toggle('selected',x===b));toast(weapons[selectedWeapon].name+' 선택')});
+document.querySelectorAll('.diffChoice').forEach(b=>b.onclick=()=>{selectedDiff=b.dataset.diff;document.querySelectorAll('.diffChoice').forEach(x=>x.classList.toggle('selected',x===b));toast(difficulties[selectedDiff].name+' 난이도')});
 resize();refreshMenu();requestAnimationFrame(loop);
 </script>
 </body>
