@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Abyss Walker upgraded survival action game">
+  <title>Abyss Walker: Rift Protocol</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050814;
+      --ink: #f6f8ff;
+      --muted: #9ca8c5;
+      --cyan: #4ee7ff;
+      --green: #57ff9a;
+      --red: #ff5f7a;
+      --gold: #ffd166;
+      --panel: rgba(10, 17, 35, .78);
+      --line: rgba(142, 231, 255, .28);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+      background: radial-gradient(circle at 50% 40%, #0b1732, #04060f 70%);
+    }
+
+    .hud,
+    .overlay,
+    .touch {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .topbar {
+      position: absolute;
+      top: max(12px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
+      display: grid;
+      grid-template-columns: minmax(190px, 1fr) auto minmax(170px, .9fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, .32);
+      backdrop-filter: blur(12px);
+    }
+
+    .stats {
+      padding: 10px;
+      border-radius: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .stat-line {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .label {
+      width: 42px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .bar {
+      height: 10px;
+      min-width: 80px;
+      flex: 1;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .fill {
+      height: 100%;
+      width: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px currentColor;
+    }
+
+    .fill.health {
+      background: linear-gradient(90deg, #ff4d6d, #ff9f1c);
+    }
+
+    .fill.shield {
+      background: linear-gradient(90deg, #4ee7ff, #7a7cff);
+    }
+
+    .fill.exp {
+      background: linear-gradient(90deg, #57ff9a, #d6ff57);
+    }
+
+    .center-chip {
+      justify-self: center;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: #eaf9ff;
+      font-weight: 900;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .center-chip span {
+      color: var(--cyan);
+    }
+
+    .weapons {
+      padding: 10px;
+      border-radius: 8px;
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: #dfe7ff;
+      text-align: right;
+    }
+
+    .actions {
+      position: absolute;
+      top: max(92px, calc(env(safe-area-inset-top) + 92px));
+      right: max(12px, env(safe-area-inset-right));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    button {
+      border: 1px solid rgba(255, 255, 255, .18);
+      background: rgba(15, 25, 49, .92);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, .25);
+    }
+
+    button:hover {
+      border-color: rgba(78, 231, 255, .75);
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(48, 128, 255, .16), transparent 42%),
+        rgba(3, 5, 12, .72);
+      pointer-events: auto;
+    }
+
+    .screen.hidden,
+    .toast.hidden {
+      display: none;
+    }
+
+    .dialog {
+      width: min(920px, 100%);
+      border-radius: 8px;
+      padding: 22px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    h1 {
+      font-size: clamp(38px, 9vw, 86px);
+    }
+
+    h2 {
+      font-size: clamp(26px, 5vw, 46px);
+    }
+
+    .subtitle {
+      margin: 12px 0 0;
+      color: var(--muted);
+      max-width: 680px;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .dialog-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 18px;
+      margin-top: 20px;
+      align-items: stretch;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .tile,
+    .upgrade-card {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .055);
+      padding: 12px;
+    }
+
+    .tile strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .tile span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .meta {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, .22);
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .meta-row b {
+      color: #fff;
+      font-size: 15px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .primary {
+      background: linear-gradient(135deg, #45dfff, #7dff9a);
+      color: #04101c;
+      border-color: transparent;
+    }
+
+    .danger {
+      color: #ffe5ea;
+      border-color: rgba(255, 95, 122, .38);
+      background: rgba(83, 15, 31, .68);
+    }
+
+    .upgrade-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .upgrade-card {
+      min-height: 230px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .upgrade-card:hover {
+      border-color: rgba(78, 231, 255, .7);
+      background: rgba(78, 231, 255, .08);
+    }
+
+    .upgrade-card .icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: rgba(255, 255, 255, .1);
+      font-weight: 1000;
+      color: var(--cyan);
+    }
+
+    .upgrade-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .upgrade-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .toast {
+      position: absolute;
+      left: 50%;
+      bottom: calc(26px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: #04101c;
+      background: #d6ff57;
+      font-weight: 900;
+      pointer-events: none;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, .28);
+    }
+
+    .stick,
+    .dash {
+      position: absolute;
+      bottom: max(22px, env(safe-area-inset-bottom));
+      pointer-events: auto;
+      display: none;
+    }
+
+    .stick {
+      left: max(18px, env(safe-area-inset-left));
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .16);
+      background: rgba(255, 255, 255, .07);
+    }
+
+    .knob {
+      position: absolute;
+      left: 43px;
+      top: 43px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(78, 231, 255, .72);
+      box-shadow: 0 0 24px rgba(78, 231, 255, .45);
+    }
+
+    .dash {
+      right: max(22px, env(safe-area-inset-right));
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+    }
+
+    @media (pointer: coarse), (max-width: 760px) {
+      .topbar {
+        grid-template-columns: 1fr auto;
+      }
+
+      .weapons {
+        grid-column: 1 / -1;
+        text-align: left;
+      }
+
+      .actions {
+        top: auto;
+        bottom: calc(112px + env(safe-area-inset-bottom));
+      }
+
+      .stick,
+      .dash {
+        display: block;
+      }
+
+      .dialog-grid,
+      .info-grid,
+      .upgrade-list {
+        grid-template-columns: 1fr;
+      }
+
+      .dialog {
+        max-height: calc(100vh - 28px);
+        overflow: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" aria-label="Abyss Walker game canvas"></canvas>
+
+  <div class="hud">
+    <div class="topbar">
+      <div class="stats panel">
+        <div class="stat-line"><span class="label">HP</span><div class="bar"><div class="fill health" id="hpFill"></div></div></div>
+        <div class="stat-line"><span class="label">SHD</span><div class="bar"><div class="fill shield" id="shieldFill"></div></div></div>
+        <div class="stat-line"><span class="label">EXP</span><div class="bar"><div class="fill exp" id="expFill"></div></div></div>
+      </div>
+      <div class="center-chip panel">Lv.<span id="levelText">1</span> · <span id="timeText">00:00</span> · Core <span id="coreText">0</span></div>
+      <div class="weapons panel" id="weaponText"></div>
+    </div>
+    <div class="actions">
+      <button id="pauseBtn" title="Pause">II</button>
+      <button id="dashBtn" title="Dash">Dash</button>
+    </div>
+  </div>
+
+  <div class="touch">
+    <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+    <button class="dash" id="touchDash">Dash</button>
+  </div>
+
+  <div class="overlay">
+    <div class="screen" id="startScreen">
+      <div class="dialog panel">
+        <h1>Abyss Walker</h1>
+        <p class="subtitle">리프트 안쪽에서 살아남으세요. 자동 무기로 적을 정리하고, 코어를 모아 영구 시스템을 강화합니다.</p>
+        <div class="dialog-grid">
+          <div>
+            <div class="info-grid">
+              <div class="tile"><strong>이동</strong><span>WASD / 방향키 / 터치 스틱</span></div>
+              <div class="tile"><strong>대시</strong><span>Space 또는 Dash 버튼</span></div>
+              <div class="tile"><strong>전투</strong><span>가까운 적을 자동 조준</span></div>
+            </div>
+            <div class="button-row">
+              <button class="primary" id="startBtn">시작</button>
+              <button id="systemBtn">시스템 강화</button>
+            </div>
+          </div>
+          <div class="meta">
+            <div class="meta-row"><span>최고 생존</span><b id="bestTime">00:00</b></div>
+            <div class="meta-row"><span>보유 코어</span><b id="bankedCore">0</b></div>
+            <div class="meta-row"><span>영구 체력</span><b id="permHp">0</b></div>
+            <div class="meta-row"><span>영구 피해</span><b id="permDmg">0</b></div>
+            <div class="meta-row"><span>영구 자석</span><b id="permMag">0</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen hidden" id="upgradeScreen">
+      <div class="dialog panel">
+        <h2>무기 선택</h2>
+        <p class="subtitle">하나를 선택하면 전투가 재개됩니다.</p>
+        <div class="upgrade-list" id="upgradeList"></div>
+      </div>
+    </div>
+
+    <div class="screen hidden" id="systemScreen">
+      <div class="dialog panel">
+        <h2>시스템 강화</h2>
+        <p class="subtitle">리프트 코어를 사용해 다음 플레이를 강화합니다.</p>
+        <div class="upgrade-list" id="systemList"></div>
+        <div class="button-row">
+          <button class="primary" id="systemBackBtn">완료</button>
+          <button class="danger" id="resetSaveBtn">저장 초기화</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen hidden" id="gameOverScreen">
+      <div class="dialog panel">
+        <h2>리프트 붕괴</h2>
+        <p class="subtitle" id="runSummary"></p>
+        <div class="button-row">
+          <button class="primary" id="retryBtn">다시 시작</button>
+          <button id="menuBtn">메뉴</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const hud = {
+      hp: document.getElementById('hpFill'),
+      shield: document.getElementById('shieldFill'),
+      exp: document.getElementById('expFill'),
+      level: document.getElementById('levelText'),
+      time: document.getElementById('timeText'),
+      core: document.getElementById('coreText'),
+      weapons: document.getElementById('weaponText'),
+      toast: document.getElementById('toast')
+    };
+    const screens = {
+      start: document.getElementById('startScreen'),
+      upgrade: document.getElementById('upgradeScreen'),
+      system: document.getElementById('systemScreen'),
+      gameOver: document.getElementById('gameOverScreen')
+    };
+    const keys = new Set();
+    const pointer = { x: 0, y: 0, active: false };
+    const stick = { active: false, id: null, x: 0, y: 0, vx: 0, vy: 0 };
+    const saveKey = 'abyssWalkerUpgradedSave';
+    const TAU = Math.PI * 2;
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+    let last = 0;
+    let mode = 'menu';
+    let shake = 0;
+    let flash = 0;
+    let save = loadSave();
+
+    const weaponDefs = {
+      blaster: { name: '펄스 블래스터', icon: 'PB', color: '#4ee7ff', cooldown: 210, desc: ['연사 속도 증가', '2발 발사', '관통탄', '폭발탄', '드론 포탑'] },
+      missile: { name: '추적 미사일', icon: 'MM', color: '#b875ff', cooldown: 760, desc: ['가까운 적 추적', '2발 발사', '관통 재탐색', '폭발', '분열 미사일'] },
+      thunder: { name: '심연 낙뢰', icon: 'LT', color: '#ffd166', cooldown: 1050, desc: ['범위 타격', '2타겟', '연쇄 번개', '스턴', '폭풍 호출'] },
+      blade: { name: '궤도 검', icon: 'SW', color: '#57ff9a', cooldown: 820, desc: ['근접 베기', '범위 증가', '2회 베기', '검기 발사', '회전 방어'] },
+      beam: { name: '리프트 빔', icon: 'LZ', color: '#ff5f7a', cooldown: 1250, desc: ['직선 관통', '사거리 증가', '2갈래', '화상', '회전 빔'] },
+      frost: { name: '냉각장', icon: 'FR', color: '#8ee7ff', cooldown: 1450, desc: ['감속 지대', '지속시간 증가', '범위 증가', '빙결', '방어막 회복'] }
+    };
+
+    const systemDefs = [
+      { id: 'hp', name: '생체 장갑', icon: 'HP', max: 5, cost: level => 2 + level * 2, desc: level => `최대 체력 +${18 * (level + 1)}` },
+      { id: 'dmg', name: '무기 증폭', icon: 'DM', max: 5, cost: level => 3 + level * 3, desc: level => `모든 피해 +${8 * (level + 1)}%` },
+      { id: 'mag', name: '코어 자석', icon: 'MG', max: 5, cost: level => 2 + level * 2, desc: level => `경험치 흡수 거리 +${35 * (level + 1)}` }
+    ];
+
+    let game = null;
+
+    function loadSave() {
+      try {
+        return Object.assign({ core: 0, best: 0, upgrades: { hp: 0, dmg: 0, mag: 0 } }, JSON.parse(localStorage.getItem(saveKey) || '{}'));
+      } catch {
+        return { core: 0, best: 0, upgrades: { hp: 0, dmg: 0, mag: 0 } };
+      }
+    }
+
+    function persist() {
+      localStorage.setItem(saveKey, JSON.stringify(save));
+      refreshMenu();
+    }
+
+    function resize() {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = Math.floor(innerWidth);
+      h = Math.floor(innerHeight);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function fmtTime(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const m = String(Math.floor(total / 60)).padStart(2, '0');
+      const s = String(total % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function dist(a, b, c, d) {
+      return Math.hypot(a - c, b - d);
+    }
+
+    function angleTo(a, b, c, d) {
+      return Math.atan2(d - b, c - a);
+    }
+
+    function show(name) {
+      Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+      if (name) screens[name].classList.remove('hidden');
+    }
+
+    function toast(text) {
+      hud.toast.textContent = text;
+      hud.toast.classList.remove('hidden');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => hud.toast.classList.add('hidden'), 1300);
+    }
+
+    function refreshMenu() {
+      document.getElementById('bestTime').textContent = fmtTime(save.best);
+      document.getElementById('bankedCore').textContent = save.core;
+      document.getElementById('permHp').textContent = save.upgrades.hp;
+      document.getElementById('permDmg').textContent = save.upgrades.dmg;
+      document.getElementById('permMag').textContent = save.upgrades.mag;
+    }
+
+    function newGame() {
+      const maxHp = 120 + save.upgrades.hp * 18;
+      game = {
+        startedAt: performance.now(),
+        elapsed: 0,
+        level: 1,
+        exp: 0,
+        nextExp: 8,
+        core: 0,
+        kills: 0,
+        spawnBank: 0,
+        difficulty: 1,
+        nextSpawn: 0,
+        nextElite: 18000,
+        paused: false,
+        player: {
+          x: 0, y: 0, vx: 0, vy: 0, r: 16, hp: maxHp, maxHp,
+          shield: 45, maxShield: 45, invuln: 0, dash: 0, dashCd: 0
+        },
+        weapons: [{ id: 'blaster', level: 1, last: 0, aux: 0 }],
+        enemies: [],
+        drops: [],
+        shots: [],
+        effects: []
+      };
+      mode = 'play';
+      show(null);
+      toast('리프트 진입');
+    }
+
+    function pauseGame(toggle = true) {
+      if (!game || mode === 'menu' || mode === 'upgrade' || mode === 'gameover') return;
+      game.paused = toggle ? !game.paused : true;
+      mode = game.paused ? 'pause' : 'play';
+      toast(game.paused ? '일시정지' : '재개');
+    }
+
+    function gameOver() {
+      mode = 'gameover';
+      const earned = game.core;
+      save.core += earned;
+      save.best = Math.max(save.best, game.elapsed);
+      persist();
+      document.getElementById('runSummary').textContent = `생존 ${fmtTime(game.elapsed)} · 처치 ${game.kills} · 획득 코어 ${earned}`;
+      show('gameOver');
+    }
+
+    function openUpgrade() {
+      mode = 'upgrade';
+      game.paused = true;
+      const owned = game.weapons.map(wpn => wpn.id);
+      const pool = Object.keys(weaponDefs).filter(id => owned.length < 4 || owned.includes(id));
+      shuffle(pool);
+      const options = pool.slice(0, 3);
+      const list = document.getElementById('upgradeList');
+      list.innerHTML = '';
+      options.forEach((id, index) => {
+        const def = weaponDefs[id];
+        const current = game.weapons.find(wpn => wpn.id === id);
+        const next = current ? Math.min(5, current.level + 1) : 1;
+        const card = document.createElement('button');
+        card.className = 'upgrade-card';
+        card.innerHTML = `<div class="icon" style="color:${def.color}">${def.icon}</div><h3>${index + 1}. ${def.name} Lv.${next}</h3><p>${def.desc[next - 1]}</p>`;
+        card.addEventListener('click', () => selectUpgrade(id));
+        list.appendChild(card);
+      });
+      show('upgrade');
+    }
+
+    function selectUpgrade(id) {
+      const existing = game.weapons.find(wpn => wpn.id === id);
+      if (existing) existing.level = Math.min(5, existing.level + 1);
+      else game.weapons.push({ id, level: 1, last: 0, aux: 0 });
+      game.paused = false;
+      mode = 'play';
+      show(null);
+      toast(`${weaponDefs[id].name} 강화`);
+    }
+
+    function openSystem() {
+      const list = document.getElementById('systemList');
+      list.innerHTML = '';
+      systemDefs.forEach(def => {
+        const level = save.upgrades[def.id] || 0;
+        const cost = def.cost(level);
+        const maxed = level >= def.max;
+        const card = document.createElement('button');
+        card.className = 'upgrade-card';
+        card.innerHTML = `<div class="icon">${def.icon}</div><h3>${def.name} Lv.${level}</h3><p>${maxed ? '최대 강화 완료' : `${def.desc(level)}<br>비용: 코어 ${cost}`}</p>`;
+        card.disabled = maxed;
+        card.addEventListener('click', () => {
+          if (maxed) return;
+          if (save.core < cost) {
+            toast('코어 부족');
+            return;
+          }
+          save.core -= cost;
+          save.upgrades[def.id] = level + 1;
+          persist();
+          openSystem();
+        });
+        list.appendChild(card);
+      });
+      show('system');
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function spawnEnemy(elite = false) {
+      const a = Math.random() * TAU;
+      const radius = Math.max(w, h) * .72 + 120;
+      const p = game.player;
+      const tier = elite ? 2.8 : 1;
+      game.enemies.push({
+        x: p.x + Math.cos(a) * radius,
+        y: p.y + Math.sin(a) * radius,
+        vx: 0, vy: 0,
+        r: elite ? 24 : 15 + Math.random() * 8,
+        hp: (9 + game.difficulty * 3.5) * tier,
+        maxHp: (9 + game.difficulty * 3.5) * tier,
+        speed: (68 + Math.min(95, game.difficulty * 7)) * (elite ? .72 : 1),
+        damage: elite ? 24 : 12,
+        elite,
+        burn: 0,
+        slow: 0,
+        stun: 0,
+        hit: 0
+      });
+    }
+
+    function addEffect(x, y, color, life, size, type = 'burst') {
+      game.effects.push({ x, y, color, life, maxLife: life, size, type, a: Math.random() * TAU });
+    }
+
+    function dropExp(x, y, elite = false) {
+      game.drops.push({ x, y, r: elite ? 8 : 5, value: elite ? 4 : 1, core: elite ? 1 : 0, vx: 0, vy: 0 });
+    }
+
+    function nearestEnemy(x = game.player.x, y = game.player.y, range = Infinity, exclude = null) {
+      let best = null;
+      let bestD = range;
+      for (const enemy of game.enemies) {
+        if (enemy === exclude) continue;
+        const d = dist(x, y, enemy.x, enemy.y);
+        if (d < bestD) {
+          bestD = d;
+          best = enemy;
+        }
+      }
+      return best;
+    }
+
+    function enemiesIn(x, y, range, max = Infinity) {
+      return game.enemies
+        .map(enemy => ({ enemy, d: dist(x, y, enemy.x, enemy.y) }))
+        .filter(item => item.d <= range)
+        .sort((a, b) => a.d - b.d)
+        .slice(0, max)
+        .map(item => item.enemy);
+    }
+
+    function damage(enemy, amount, opts = {}) {
+      if (!enemy) return;
+      const mult = 1 + save.upgrades.dmg * .08;
+      enemy.hp -= amount * mult;
+      enemy.hit = 90;
+      if (opts.burn) enemy.burn = Math.max(enemy.burn, 1100);
+      if (opts.slow) enemy.slow = Math.max(enemy.slow, opts.slow);
+      if (opts.stun) enemy.stun = Math.max(enemy.stun, opts.stun);
+      if (enemy.hp <= 0) {
+        game.kills++;
+        dropExp(enemy.x, enemy.y, enemy.elite);
+        addEffect(enemy.x, enemy.y, enemy.elite ? '#ffd166' : '#57ff9a', 360, enemy.r * 2.3);
+        game.enemies.splice(game.enemies.indexOf(enemy), 1);
+      }
+    }
+
+    function shoot(x, y, a, speed, color, damageValue, opts = {}) {
+      game.shots.push({
+        x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: opts.r || 4,
+        life: opts.life || 1200, color, damage: damageValue, pierce: opts.pierce || 0,
+        homing: opts.homing || false, target: opts.target || null, explode: opts.explode || 0,
+        split: opts.split || false, burn: opts.burn || false, slow: opts.slow || 0,
+        beam: false
+      });
+    }
+
+    function weaponDamage(id, level) {
+      const table = {
+        blaster: [.9, 1.1, 1.35, 1.65, 2],
+        missile: [3.2, 3.8, 4.5, 5.2, 6.2],
+        thunder: [4, 4.8, 5.6, 6.7, 8],
+        blade: [2.4, 3, 3.6, 4.3, 5.2],
+        beam: [4.2, 5, 6, 7.2, 8.5],
+        frost: [1.6, 2, 2.4, 3.1, 3.8]
+      };
+      return table[id][Math.min(5, level) - 1];
+    }
+
+    function tickWeapons(t, dt) {
+      for (const wpn of game.weapons) {
+        const def = weaponDefs[wpn.id];
+        const cd = def.cooldown * Math.max(.58, 1 - game.level * .006);
+        if (t - wpn.last < cd) {
+          if (wpn.id === 'blade' && wpn.level >= 5) orbitBlade(t, dt);
+          continue;
+        }
+        wpn.last = t;
+        const p = game.player;
+        if (wpn.id === 'blaster') {
+          const count = wpn.level >= 2 ? 2 : 1;
+          for (let i = 0; i < count; i++) {
+            const target = nearestEnemy();
+            if (!target) break;
+            const a = angleTo(p.x, p.y, target.x, target.y) + (i - .5) * .08;
+            shoot(p.x, p.y, a, 640, def.color, weaponDamage(wpn.id, wpn.level), {
+              pierce: wpn.level >= 3 ? 1 : 0,
+              explode: wpn.level >= 4 ? 52 : 0,
+              r: 4.5
+            });
+          }
+          if (wpn.level >= 5 && t - wpn.aux > 680) {
+            wpn.aux = t;
+            [-32, 32].forEach(offset => {
+              const target = nearestEnemy();
+              if (target) shoot(p.x + offset, p.y - 18, angleTo(p.x, p.y, target.x, target.y), 580, '#aaff57', 1.4, { r: 4 });
+            });
+          }
+        }
+        if (wpn.id === 'missile') {
+          const count = wpn.level >= 2 ? 2 : 1;
+          for (let i = 0; i < count; i++) {
+            const target = nearestEnemy();
+            if (target) shoot(p.x, p.y, angleTo(p.x, p.y, target.x, target.y), 390, def.color, weaponDamage(wpn.id, wpn.level), {
+              homing: true, target, r: 7, pierce: wpn.level >= 3 ? 1 : 0, explode: wpn.level >= 4 ? 74 : 0, split: wpn.level >= 5
+            });
+          }
+        }
+        if (wpn.id === 'thunder') {
+          const targets = enemiesIn(p.x, p.y, 640, wpn.level >= 2 ? 2 : 1);
+          targets.forEach(target => lightning(target, wpn.level));
+          if (wpn.level >= 3 && targets[0]) enemiesIn(targets[0].x, targets[0].y, 260, 2).forEach(target => lightning(target, wpn.level, .52));
+          if (wpn.level >= 5 && t - wpn.aux > 2500) {
+            wpn.aux = t;
+            enemiesIn(p.x, p.y, 860, 5).forEach(target => lightning(target, wpn.level, .7));
+          }
+        }
+        if (wpn.id === 'blade') {
+          bladeSwing(wpn.level);
+          if (wpn.level >= 3) setTimeout(() => game && bladeSwing(wpn.level), 120);
+          if (wpn.level >= 4) {
+            const target = nearestEnemy();
+            if (target) shoot(p.x, p.y, angleTo(p.x, p.y, target.x, target.y), 460, def.color, weaponDamage(wpn.id, wpn.level) * .78, { r: 16, life: 900, pierce: 2 });
+          }
+        }
+        if (wpn.id === 'beam') {
+          const target = nearestEnemy();
+          if (target) {
+            const a = angleTo(p.x, p.y, target.x, target.y);
+            const angles = wpn.level >= 3 ? [a - .16, a + .16] : [a];
+            angles.forEach(beamAngle => beam(beamAngle, wpn.level >= 2 ? 790 : 570, wpn.level));
+          }
+          if (wpn.level >= 5 && t - wpn.aux > 190) {
+            wpn.aux = t;
+            wpn.spin = (wpn.spin || 0) + .24;
+            beam(wpn.spin, 650, wpn.level, .34);
+          }
+        }
+        if (wpn.id === 'frost') {
+          addEffect(p.x, p.y, def.color, 680, wpn.level >= 3 ? 190 : 135, 'ring');
+          enemiesIn(p.x, p.y, wpn.level >= 3 ? 190 : 135, 16).forEach(enemy => {
+            damage(enemy, weaponDamage(wpn.id, wpn.level), { slow: wpn.level >= 4 ? 1300 : 760, stun: wpn.level >= 4 ? 260 : 0 });
+          });
+          if (wpn.level >= 5) game.player.shield = Math.min(game.player.maxShield, game.player.shield + 5);
+        }
+      }
+    }
+
+    function lightning(enemy, level, scale = 1) {
+      addEffect(enemy.x, enemy.y, '#ffd166', 280, 64, 'bolt');
+      damage(enemy, weaponDamage('thunder', level) * scale, { stun: level >= 4 ? 620 : 0 });
+    }
+
+    function bladeSwing(level) {
+      const p = game.player;
+      const target = nearestEnemy();
+      const a = target ? angleTo(p.x, p.y, target.x, target.y) : 0;
+      const range = level >= 2 ? 150 : 108;
+      addEffect(p.x + Math.cos(a) * 42, p.y + Math.sin(a) * 42, '#57ff9a', 180, range, 'slash');
+      enemiesIn(p.x, p.y, range, 10).forEach(enemy => damage(enemy, weaponDamage('blade', level)));
+    }
+
+    function orbitBlade(t, dt) {
+      const p = game.player;
+      const a = t * .004;
+      const x = p.x + Math.cos(a) * 92;
+      const y = p.y + Math.sin(a) * 92;
+      addEffect(x, y, '#57ff9a', 70, 32, 'slash');
+      if (!orbitBlade.last || t - orbitBlade.last > 230) {
+        orbitBlade.last = t;
+        enemiesIn(p.x, p.y, 128, 6).forEach(enemy => damage(enemy, 2.2));
+      }
+    }
+
+    function beam(a, range, level, scale = 1) {
+      const p = game.player;
+      const x2 = p.x + Math.cos(a) * range;
+      const y2 = p.y + Math.sin(a) * range;
+      game.effects.push({ x: p.x, y: p.y, x2, y2, color: '#ff5f7a', life: 160, maxLife: 160, size: 18, type: 'beam' });
+      game.enemies.forEach(enemy => {
+        if (lineDistance(enemy.x, enemy.y, p.x, p.y, x2, y2) <= 28) damage(enemy, weaponDamage('beam', level) * scale, { burn: level >= 4 });
+      });
+    }
+
+    function lineDistance(px, py, ax, ay, bx, by) {
+      const dx = bx - ax;
+      const dy = by - ay;
+      const l2 = dx * dx + dy * dy;
+      const t = l2 ? clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1) : 0;
+      return dist(px, py, ax + dx * t, ay + dy * t);
+    }
+
+    function update(dt, now) {
+      if (!game || mode !== 'play') return;
+      game.elapsed += dt;
+      game.difficulty = 1 + game.elapsed / 23000;
+      const p = game.player;
+      let ix = 0;
+      let iy = 0;
+      if (keys.has('KeyA') || keys.has('ArrowLeft')) ix -= 1;
+      if (keys.has('KeyD') || keys.has('ArrowRight')) ix += 1;
+      if (keys.has('KeyW') || keys.has('ArrowUp')) iy -= 1;
+      if (keys.has('KeyS') || keys.has('ArrowDown')) iy += 1;
+      ix += stick.vx;
+      iy += stick.vy;
+      const len = Math.hypot(ix, iy) || 1;
+      const speed = p.dash > 0 ? 720 : 260;
+      p.vx += (ix / len * speed - p.vx) * .16;
+      p.vy += (iy / len * speed - p.vy) * .16;
+      p.x += p.vx * dt / 1000;
+      p.y += p.vy * dt / 1000;
+      p.invuln = Math.max(0, p.invuln - dt);
+      p.dash = Math.max(0, p.dash - dt);
+      p.dashCd = Math.max(0, p.dashCd - dt);
+      p.shield = Math.min(p.maxShield, p.shield + dt * .0038);
+
+      if (now > game.nextSpawn) {
+        game.spawnBank += .9 + game.difficulty * .22;
+        const count = Math.floor(game.spawnBank);
+        game.spawnBank -= count;
+        for (let i = 0; i < count; i++) spawnEnemy(false);
+        game.nextSpawn = now + Math.max(260, 760 - game.difficulty * 24);
+      }
+      if (game.elapsed > game.nextElite) {
+        game.nextElite += 21000;
+        spawnEnemy(true);
+        toast('엘리트 출현');
+      }
+
+      for (const enemy of [...game.enemies]) {
+        if (enemy.burn > 0) {
+          enemy.burn -= dt;
+          if (!enemy.nextBurn || now > enemy.nextBurn) {
+            enemy.nextBurn = now + 310;
+            damage(enemy, .8);
+          }
+        }
+        enemy.slow = Math.max(0, enemy.slow - dt);
+        enemy.stun = Math.max(0, enemy.stun - dt);
+        enemy.hit = Math.max(0, enemy.hit - dt);
+        if (enemy.stun <= 0) {
+          const a = angleTo(enemy.x, enemy.y, p.x, p.y);
+          const s = enemy.speed * (enemy.slow > 0 ? .42 : 1);
+          enemy.vx += (Math.cos(a) * s - enemy.vx) * .055;
+          enemy.vy += (Math.sin(a) * s - enemy.vy) * .055;
+          enemy.x += enemy.vx * dt / 1000;
+          enemy.y += enemy.vy * dt / 1000;
+        }
+        if (dist(enemy.x, enemy.y, p.x, p.y) < enemy.r + p.r && p.invuln <= 0) {
+          let hit = enemy.damage;
+          if (p.shield > 0) {
+            const used = Math.min(p.shield, hit);
+            p.shield -= used;
+            hit -= used;
+          }
+          p.hp -= hit;
+          p.invuln = 620;
+          shake = 14;
+          flash = 180;
+          if (p.hp <= 0) gameOver();
+        }
+      }
+
+      tickWeapons(now, dt);
+
+      for (const shot of [...game.shots]) {
+        shot.life -= dt;
+        if (shot.homing && shot.target && game.enemies.includes(shot.target)) {
+          const a = angleTo(shot.x, shot.y, shot.target.x, shot.target.y);
+          shot.vx += (Math.cos(a) * 480 - shot.vx) * .08;
+          shot.vy += (Math.sin(a) * 480 - shot.vy) * .08;
+        }
+        shot.x += shot.vx * dt / 1000;
+        shot.y += shot.vy * dt / 1000;
+        addEffect(shot.x, shot.y, shot.color, 90, shot.r * 1.7, 'trail');
+        for (const enemy of [...game.enemies]) {
+          if (dist(shot.x, shot.y, enemy.x, enemy.y) < shot.r + enemy.r) {
+            damage(enemy, shot.damage, { burn: shot.burn, slow: shot.slow });
+            if (shot.explode) {
+              addEffect(shot.x, shot.y, '#ffcf7a', 260, shot.explode, 'ring');
+              enemiesIn(shot.x, shot.y, shot.explode, 12).forEach(target => damage(target, shot.damage * .46));
+            }
+            if (shot.split) {
+              enemiesIn(shot.x, shot.y, 520, 3).forEach(target => shoot(shot.x, shot.y, angleTo(shot.x, shot.y, target.x, target.y), 520, '#d39cff', shot.damage * .34, { homing: true, target, r: 4 }));
+            }
+            if (shot.pierce > 0) shot.pierce--;
+            else shot.life = -1;
+            break;
+          }
+        }
+        if (shot.life <= 0) game.shots.splice(game.shots.indexOf(shot), 1);
+      }
+
+      const magnet = 120 + save.upgrades.mag * 35;
+      for (const drop of [...game.drops]) {
+        const d = dist(drop.x, drop.y, p.x, p.y);
+        if (d < magnet) {
+          const a = angleTo(drop.x, drop.y, p.x, p.y);
+          const s = 360 + (magnet - d) * 4;
+          drop.vx += Math.cos(a) * s * dt / 1000;
+          drop.vy += Math.sin(a) * s * dt / 1000;
+        }
+        drop.x += drop.vx * dt / 1000;
+        drop.y += drop.vy * dt / 1000;
+        if (d < p.r + drop.r + 8) {
+          game.exp += drop.value;
+          game.core += drop.core;
+          if (game.exp >= game.nextExp) {
+            game.exp -= game.nextExp;
+            game.level++;
+            game.nextExp = Math.floor(game.nextExp * 1.32 + 5);
+            openUpgrade();
+          }
+          game.drops.splice(game.drops.indexOf(drop), 1);
+        }
+      }
+
+      for (const fx of [...game.effects]) {
+        fx.life -= dt;
+        if (fx.life <= 0) game.effects.splice(game.effects.indexOf(fx), 1);
+      }
+      shake = Math.max(0, shake - dt * .06);
+      flash = Math.max(0, flash - dt);
+      updateHud();
+    }
+
+    function doDash() {
+      if (!game || mode !== 'play') return;
+      const p = game.player;
+      if (p.dashCd > 0) return;
+      let ix = 0;
+      let iy = 0;
+      if (keys.has('KeyA') || keys.has('ArrowLeft')) ix -= 1;
+      if (keys.has('KeyD') || keys.has('ArrowRight')) ix += 1;
+      if (keys.has('KeyW') || keys.has('ArrowUp')) iy -= 1;
+      if (keys.has('KeyS') || keys.has('ArrowDown')) iy += 1;
+      ix += stick.vx;
+      iy += stick.vy;
+      if (!ix && !iy) {
+        ix = pointer.active ? pointer.x - w / 2 : 1;
+        iy = pointer.active ? pointer.y - h / 2 : 0;
+      }
+      const len = Math.hypot(ix, iy) || 1;
+      p.vx = ix / len * 760;
+      p.vy = iy / len * 760;
+      p.dash = 160;
+      p.dashCd = 1350;
+      p.invuln = Math.max(p.invuln, 220);
+      addEffect(p.x, p.y, '#4ee7ff', 240, 70, 'ring');
+    }
+
+    function updateHud() {
+      if (!game) return;
+      const p = game.player;
+      hud.hp.style.width = `${clamp(p.hp / p.maxHp * 100, 0, 100)}%`;
+      hud.shield.style.width = `${clamp(p.shield / p.maxShield * 100, 0, 100)}%`;
+      hud.exp.style.width = `${clamp(game.exp / game.nextExp * 100, 0, 100)}%`;
+      hud.level.textContent = game.level;
+      hud.time.textContent = fmtTime(game.elapsed);
+      hud.core.textContent = game.core;
+      hud.weapons.innerHTML = game.weapons.map(wpn => {
+        const def = weaponDefs[wpn.id];
+        return `<span style="color:${def.color}">${def.name} Lv.${wpn.level}</span>`;
+      }).join('');
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      const p = game?.player || { x: 0, y: 0 };
+      const sx = w / 2 - p.x + (shake ? (Math.random() - .5) * shake : 0);
+      const sy = h / 2 - p.y + (shake ? (Math.random() - .5) * shake : 0);
+      ctx.save();
+      ctx.translate(sx, sy);
+      drawWorldGrid(p.x, p.y);
+      if (game) {
+        game.drops.forEach(drawDrop);
+        game.effects.forEach(drawEffect);
+        game.shots.forEach(drawShot);
+        game.enemies.forEach(drawEnemy);
+        drawPlayer(game.player);
+      }
+      ctx.restore();
+      if (mode === 'pause') {
+        ctx.fillStyle = 'rgba(0, 0, 0, .35)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#f6f8ff';
+        ctx.textAlign = 'center';
+        ctx.font = '900 34px system-ui';
+        ctx.fillText('PAUSED', w / 2, h / 2);
+      }
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255, 60, 95, ${flash / 900})`;
+        ctx.fillRect(0, 0, w, h);
+      }
+    }
+
+    function drawWorldGrid(px, py) {
+      ctx.fillStyle = '#050814';
+      ctx.fillRect(px - w, py - h, w * 2, h * 2);
+      const step = 90;
+      const left = Math.floor((px - w) / step) * step;
+      const top = Math.floor((py - h) / step) * step;
+      ctx.strokeStyle = 'rgba(110, 158, 255, .08)';
+      ctx.lineWidth = 1;
+      for (let x = left; x < px + w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, py - h);
+        ctx.lineTo(x, py + h);
+        ctx.stroke();
+      }
+      for (let y = top; y < py + h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(px - w, y);
+        ctx.lineTo(px + w, y);
+        ctx.stroke();
+      }
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, Math.max(w, h) * .75);
+      grad.addColorStop(0, 'rgba(20, 48, 96, .14)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, .55)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(px - w, py - h, w * 2, h * 2);
+    }
+
+    function drawPlayer(p) {
+      ctx.save();
+      ctx.globalAlpha = p.invuln > 0 ? .55 + Math.sin(performance.now() * .04) * .2 : 1;
+      ctx.fillStyle = '#4ee7ff';
+      ctx.shadowColor = '#4ee7ff';
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#f6f8ff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      if (p.shield > 4) {
+        ctx.strokeStyle = `rgba(78, 231, 255, ${.16 + p.shield / p.maxShield * .36})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + 10, 0, TAU);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawEnemy(enemy) {
+      ctx.save();
+      ctx.fillStyle = enemy.elite ? '#ffd166' : enemy.stun > 0 ? '#8ee7ff' : enemy.hit > 0 ? '#ffffff' : '#ff5f7a';
+      ctx.shadowColor = enemy.elite ? '#ffd166' : '#ff5f7a';
+      ctx.shadowBlur = enemy.elite ? 18 : 8;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, enemy.r, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,.55)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      const hp = clamp(enemy.hp / enemy.maxHp, 0, 1);
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(enemy.x - enemy.r, enemy.y - enemy.r - 10, enemy.r * 2, 4);
+      ctx.fillStyle = enemy.elite ? '#ffd166' : '#57ff9a';
+      ctx.fillRect(enemy.x - enemy.r, enemy.y - enemy.r - 10, enemy.r * 2 * hp, 4);
+      ctx.restore();
+    }
+
+    function drawDrop(drop) {
+      ctx.fillStyle = drop.core ? '#ffd166' : '#57ff9a';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(drop.x, drop.y, drop.r, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawShot(shot) {
+      ctx.fillStyle = shot.color;
+      ctx.shadowColor = shot.color;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(shot.x, shot.y, shot.r, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawEffect(fx) {
+      const a = clamp(fx.life / fx.maxLife, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = fx.color;
+      ctx.fillStyle = fx.color;
+      ctx.lineWidth = 3;
+      if (fx.type === 'ring') {
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, fx.size * (1.2 - a * .55), 0, TAU);
+        ctx.stroke();
+      } else if (fx.type === 'beam') {
+        ctx.lineWidth = fx.size * a;
+        ctx.beginPath();
+        ctx.moveTo(fx.x, fx.y);
+        ctx.lineTo(fx.x2, fx.y2);
+        ctx.stroke();
+      } else if (fx.type === 'slash') {
+        ctx.lineWidth = 9 * a;
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, fx.size * .65, fx.a - .8, fx.a + .8);
+        ctx.stroke();
+      } else if (fx.type === 'bolt') {
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(fx.x - 18, fx.y - 48);
+        ctx.lineTo(fx.x + 7, fx.y - 8);
+        ctx.lineTo(fx.x - 4, fx.y - 8);
+        ctx.lineTo(fx.x + 17, fx.y + 44);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(fx.x, fx.y, fx.size * (1 - a), 0, TAU);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function loop(now) {
+      const dt = Math.min(34, now - last || 16);
+      last = now;
+      update(dt, now);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function resetStick() {
+      stick.active = false;
+      stick.id = null;
+      stick.vx = 0;
+      stick.vy = 0;
+      document.getElementById('knob').style.transform = 'translate(0px, 0px)';
+    }
+
+    function setStick(clientX, clientY) {
+      const rect = document.getElementById('stick').getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const len = Math.hypot(dx, dy) || 1;
+      const max = 43;
+      const mag = Math.min(max, len);
+      stick.vx = dx / len * mag / max;
+      stick.vy = dy / len * mag / max;
+      document.getElementById('knob').style.transform = `translate(${stick.vx * max}px, ${stick.vy * max}px)`;
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('keydown', event => {
+      keys.add(event.code);
+      if (event.code === 'Space') {
+        event.preventDefault();
+        doDash();
+      }
+      if (event.code === 'Escape') pauseGame();
+      if (mode === 'upgrade' && ['Digit1', 'Digit2', 'Digit3'].includes(event.code)) {
+        const index = Number(event.code.replace('Digit', '')) - 1;
+        const card = document.querySelectorAll('#upgradeList .upgrade-card')[index];
+        if (card) card.click();
+      }
+    });
+    window.addEventListener('keyup', event => keys.delete(event.code));
+    canvas.addEventListener('pointermove', event => {
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      pointer.active = true;
+    });
+    canvas.addEventListener('pointerleave', () => pointer.active = false);
+    document.getElementById('stick').addEventListener('pointerdown', event => {
+      stick.active = true;
+      stick.id = event.pointerId;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setStick(event.clientX, event.clientY);
+    });
+    document.getElementById('stick').addEventListener('pointermove', event => {
+      if (stick.active && stick.id === event.pointerId) setStick(event.clientX, event.clientY);
+    });
+    document.getElementById('stick').addEventListener('pointerup', resetStick);
+    document.getElementById('stick').addEventListener('pointercancel', resetStick);
+    document.getElementById('dashBtn').addEventListener('click', doDash);
+    document.getElementById('touchDash').addEventListener('click', doDash);
+    document.getElementById('pauseBtn').addEventListener('click', pauseGame);
+    document.getElementById('startBtn').addEventListener('click', newGame);
+    document.getElementById('retryBtn').addEventListener('click', newGame);
+    document.getElementById('menuBtn').addEventListener('click', () => { mode = 'menu'; game = null; show('start'); refreshMenu(); });
+    document.getElementById('systemBtn').addEventListener('click', openSystem);
+    document.getElementById('systemBackBtn').addEventListener('click', () => { show('start'); refreshMenu(); });
+    document.getElementById('resetSaveBtn').addEventListener('click', () => {
+      save = { core: 0, best: 0, upgrades: { hp: 0, dmg: 0, mag: 0 } };
+      persist();
+      openSystem();
+      toast('저장 초기화');
+    });
+
+    resize();
+    refreshMenu();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
