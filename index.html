@@ -3,191 +3,107 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Cosmic Deep Field — Constellation Art</title>
+<title>Cosmic Deep Field — High Density Optimized</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Space+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Space+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: 100%; height: 100%; overflow: hidden;
     background: #000005;
     touch-action: none;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     cursor: crosshair;
   }
   canvas { display: block; position: fixed; inset: 0; width: 100vw; height: 100vh; }
 
-  /* HUD overlay */
-  .hud {
-    position: fixed;
-    left: 0; top: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  /* Top left — title */
-  .hud-title {
-    position: absolute;
-    top: 22px; left: 24px;
-  }
+  .hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+  .hud-title { position: absolute; top: 20px; left: 22px; }
   .hud-title .main {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(20px, 4.8vw, 30px);
     font-weight: 300;
-    font-size: 22px;
-    letter-spacing: 0.18em;
-    color: rgba(200, 220, 255, 0.92);
-    text-shadow: 0 0 30px rgba(100, 160, 255, 0.6), 0 0 60px rgba(100, 160, 255, 0.2);
-    display: block;
+    letter-spacing: .18em;
     line-height: 1;
+    color: rgba(220,232,255,.96);
+    text-shadow: 0 0 22px rgba(120,170,255,.52), 0 0 72px rgba(120,170,255,.18), 0 0 110px rgba(255,190,110,.08);
   }
   .hud-title .sub {
-    font-family: 'Space Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.32em;
-    color: rgba(120, 160, 220, 0.55);
-    text-transform: uppercase;
     display: block;
-    margin-top: 5px;
+    margin-top: 7px;
+    font-size: 9px;
+    letter-spacing: .32em;
+    color: rgba(138,173,232,.56);
+    text-transform: uppercase;
   }
-
-  /* Top right — coordinates */
   .hud-coords {
-    position: absolute;
-    top: 22px; right: 24px;
-    text-align: right;
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    color: rgba(100, 140, 200, 0.45);
-    line-height: 1.8;
+    position: absolute; top: 22px; right: 22px; text-align: right;
+    font-size: 9px; letter-spacing: .18em; line-height: 1.8; color: rgba(125,157,214,.44);
   }
-
-  /* Bottom — mode instructions */
+  .hud-status {
+    position: absolute; left: 22px; bottom: 154px;
+    font-size: 9px; letter-spacing: .18em; color: rgba(205,219,248,.34); text-transform: uppercase;
+  }
+  .hud-status span { color: rgba(255,220,144,.68); text-shadow: 0 0 14px rgba(255,188,96,.18); }
   .hud-modes {
-    position: absolute;
-    bottom: 28px; left: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
+    position: absolute; left: 22px; bottom: 24px; display: flex; flex-direction: column; gap: 7px;
+    max-width: min(560px, calc(100vw - 96px));
   }
-  .mode-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .mode-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: rgba(160, 200, 255, 0.5);
-    box-shadow: 0 0 6px rgba(160, 200, 255, 0.4);
-    flex-shrink: 0;
-  }
-  .mode-text {
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    color: rgba(140, 175, 230, 0.5);
-  }
-
-  /* Bottom right — decorative reticle */
+  .mode-item { display: flex; align-items: center; gap: 10px; }
+  .mode-dot { width: 5px; height: 5px; border-radius: 50%; flex: 0 0 auto; }
+  .mode-text { font-size: 9px; letter-spacing: .12em; color: rgba(152,181,234,.54); white-space: nowrap; }
   .hud-reticle {
-    position: absolute;
-    bottom: 24px; right: 24px;
-    width: 38px; height: 38px;
+    position: absolute; bottom: 20px; right: 22px; width: 44px; height: 44px;
+    opacity: .42; filter: drop-shadow(0 0 8px rgba(160,200,255,.18));
   }
-  .hud-reticle svg {
-    width: 100%; height: 100%;
-    opacity: 0.35;
-    animation: reticle-spin 12s linear infinite;
-  }
-  @keyframes reticle-spin {
-    to { transform: rotate(360deg); }
-  }
-
-  /* Vignette */
+  .hud-reticle svg { width: 100%; height: 100%; animation: reticle-spin 18s linear infinite; }
+  @keyframes reticle-spin { to { transform: rotate(360deg); } }
   .vignette {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(
-      ellipse at 50% 50%,
-      transparent 30%,
-      rgba(0, 0, 8, 0.55) 70%,
-      rgba(0, 0, 5, 0.88) 100%
-    );
-    pointer-events: none;
-    z-index: 5;
+    position: fixed; inset: 0; z-index: 4; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, transparent 28%, rgba(0,0,10,.42) 68%, rgba(0,0,5,.86) 100%);
   }
-
-  /* Scanline grain overlay */
-  .grain {
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 180px 180px;
-    opacity: 0.022;
-    pointer-events: none;
-    z-index: 6;
-  }
-
-  /* Mode flash */
   .mode-flash {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 7;
-    opacity: 0;
-    transition: opacity 0.08s ease;
+    position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0; transition: opacity .12s ease;
   }
-  .mode-flash.active {
-    opacity: 1;
-    transition: opacity 0s;
+  .mode-flash.active { opacity: 1; transition: opacity 0s; }
+  @media (max-width: 560px) {
+    .hud-title { top: 18px; left: 18px; }
+    .hud-coords { top: 18px; right: 18px; font-size: 8px; }
+    .hud-status { left: 18px; bottom: 142px; }
+    .hud-modes { left: 18px; bottom: 18px; }
+    .mode-text { font-size: 8px; letter-spacing: .09em; }
+    .hud-reticle { right: 18px; bottom: 16px; }
   }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div class="vignette"></div>
-<div class="grain"></div>
 <div class="mode-flash" id="modeFlash"></div>
 
 <div class="hud">
   <div class="hud-title">
     <span class="main">DEEP FIELD</span>
-    <span class="sub">Constellation Interface</span>
+    <span class="sub">High Density Constellation Interface</span>
   </div>
-
-  <div class="hud-coords">
-    RA 03h 32m 39s<br>
-    DEC +00° 10′ 15″<br>
-    z = 0.000
-  </div>
-
+  <div class="hud-coords" id="coords">RA 03h 32m 39s<br>DEC +00° 10′ 15″<br>z = 0.000</div>
+  <div class="hud-status" id="status">MODE <span>PASSIVE DRIFT</span></div>
   <div class="hud-modes">
-    <div class="mode-item">
-      <div class="mode-dot" style="background:rgba(255,160,80,0.7);box-shadow:0 0 6px rgba(255,140,60,0.5)"></div>
-      <span class="mode-text">1F — GRAVITATIONAL PULL</span>
-    </div>
-    <div class="mode-item">
-      <div class="mode-dot" style="background:rgba(160,200,255,0.7);box-shadow:0 0 6px rgba(160,200,255,0.5)"></div>
-      <span class="mode-text">2F — BINARY ORBIT</span>
-    </div>
-    <div class="mode-item">
-      <div class="mode-dot" style="background:rgba(200,140,255,0.7);box-shadow:0 0 6px rgba(180,120,255,0.5)"></div>
-      <span class="mode-text">3F — GALACTIC VORTEX</span>
-    </div>
-    <div class="mode-item">
-      <div class="mode-dot" style="background:rgba(100,255,200,0.7);box-shadow:0 0 6px rgba(80,255,180,0.5)"></div>
-      <span class="mode-text">4F — SUPERNOVA BURST</span>
-    </div>
+    <div class="mode-item"><div class="mode-dot" style="background:rgba(255,165,82,.8);box-shadow:0 0 8px rgba(255,140,60,.55)"></div><span class="mode-text">1F — ACCRETION BLOOM</span></div>
+    <div class="mode-item"><div class="mode-dot" style="background:rgba(160,205,255,.82);box-shadow:0 0 8px rgba(160,200,255,.58)"></div><span class="mode-text">2F — BINARY BRIDGE</span></div>
+    <div class="mode-item"><div class="mode-dot" style="background:rgba(210,145,255,.8);box-shadow:0 0 8px rgba(180,120,255,.56)"></div><span class="mode-text">3F — TRIANGLE WEAVE</span></div>
+    <div class="mode-item"><div class="mode-dot" style="background:rgba(105,255,205,.8);box-shadow:0 0 8px rgba(80,255,180,.56)"></div><span class="mode-text">4F — SUPERNOVA RING</span></div>
+    <div class="mode-item"><div class="mode-dot" style="background:rgba(255,240,168,.82);box-shadow:0 0 8px rgba(255,228,140,.58)"></div><span class="mode-text">5F+ — CELESTIAL CROWN / DOUBLE TAP — NOVA</span></div>
   </div>
-
   <div class="hud-reticle">
-    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="19" cy="19" r="16" stroke="rgba(160,200,255,0.8)" stroke-width="0.5" stroke-dasharray="4 3"/>
-      <line x1="19" y1="3" x2="19" y2="9" stroke="rgba(160,200,255,0.9)" stroke-width="0.8"/>
-      <line x1="19" y1="29" x2="19" y2="35" stroke="rgba(160,200,255,0.9)" stroke-width="0.8"/>
-      <line x1="3" y1="19" x2="9" y2="19" stroke="rgba(160,200,255,0.9)" stroke-width="0.8"/>
-      <line x1="29" y1="19" x2="35" y2="19" stroke="rgba(160,200,255,0.9)" stroke-width="0.8"/>
-      <circle cx="19" cy="19" r="2" stroke="rgba(200,220,255,0.7)" stroke-width="0.6"/>
+    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="22" cy="22" r="17" stroke="rgba(170,205,255,.62)" stroke-width="0.6"/>
+      <circle cx="22" cy="22" r="9" stroke="rgba(170,205,255,.28)" stroke-width="0.5"/>
+      <line x1="22" y1="4" x2="22" y2="11" stroke="rgba(180,214,255,.86)" stroke-width="0.8"/>
+      <line x1="22" y1="33" x2="22" y2="40" stroke="rgba(180,214,255,.86)" stroke-width="0.8"/>
+      <line x1="4" y1="22" x2="11" y2="22" stroke="rgba(180,214,255,.86)" stroke-width="0.8"/>
+      <line x1="33" y1="22" x2="40" y2="22" stroke="rgba(180,214,255,.86)" stroke-width="0.8"/>
+      <circle cx="22" cy="22" r="2" stroke="rgba(225,235,255,.72)" stroke-width="0.7"/>
     </svg>
   </div>
 </div>
@@ -197,443 +113,603 @@
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d', { alpha: false });
   const flash = document.getElementById('modeFlash');
-  let W, H, DPR;
+  const statusEl = document.getElementById('status');
+  const coordsEl = document.getElementById('coords');
+
+  let W = 0, H = 0, DPR = 1;
+  let last = performance.now();
+  let time = 0;
+  let modePulse = 0;
+  let prevTouchCount = 0;
+  let supernovaCooldown = 0;
+  let lastTapAt = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
+  let autoCometTimer = 0;
+  let avgDt = 16.7;
+  let qualityScale = 1;
+  let connectionDistance = 84;
+  let starCountBase = 0;
+
   const pointers = new Map();
   const stars = [];
   const galaxies = [];
+  const dust = [];
   const meteors = [];
-  let time = 0;
-  let last = performance.now();
-  let modePulse = 0;
+  const sparks = [];
+  const shockwaves = [];
+  const grid = new Map();
 
-  // Star color palettes — inspired by JWST/Hubble deep field images
   const STAR_COLORS = [
-    { r:255, g:255, b:255 },   // pure white
-    { r:200, g:220, b:255 },   // cool blue-white
-    { r:255, g:230, b:180 },   // warm yellow (like Hubble stars)
-    { r:255, g:180, b:100 },   // orange giant
-    { r:160, g:200, b:255 },   // blue giant
-    { r:255, g:100, b:80  },   // red giant
+    { r:255, g:255, b:255 },
+    { r:210, g:226, b:255 },
+    { r:255, g:236, b:194 },
+    { r:255, g:190, b:110 },
+    { r:170, g:208, b:255 },
+    { r:255, g:120, b:90 }
   ];
-
-  // Nebula/galaxy palette from photos
   const NEBULA_COLS = [
-    [255, 120, 60, 0.06],   // Milky Way core warm orange
-    [180, 100, 255, 0.05],  // purple nebula
-    [60,  120, 255, 0.07],  // JWST blue arc
-    [255, 200, 80,  0.04],  // warm glow
-    [80,  200, 255, 0.05],  // cyan cloud
+    [255,126,64,0.048], [188,105,255,0.042], [68,130,255,0.048], [255,214,92,0.034], [86,215,255,0.038]
   ];
-
-  function resize() {
-    DPR = Math.min(devicePixelRatio || 1, 2);
-    W = innerWidth; H = innerHeight;
-    canvas.width  = Math.floor(W * DPR);
-    canvas.height = Math.floor(H * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    initStars();
-    initGalaxies();
-  }
+  const MODE_LABELS = ['PASSIVE DRIFT', 'ACCRETION BLOOM', 'BINARY BRIDGE', 'TRIANGLE WEAVE', 'SUPERNOVA RING', 'CELESTIAL CROWN'];
 
   function rand(a, b) { return a + Math.random() * (b - a); }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+  function modeIndex() { return Math.min(pointers.size, 5); }
+  function getModeColor(n) {
+    if (n === 1) return [255, 156, 78];
+    if (n === 2) return [150, 205, 255];
+    if (n === 3) return [205, 122, 255];
+    if (n === 4) return [100, 255, 205];
+    if (n >= 5) return [255, 235, 158];
+    return [220, 232, 255];
+  }
+  function centerOfTouches() {
+    const arr = [...pointers.values()];
+    if (!arr.length) return { x: W * 0.5, y: H * 0.5 };
+    let sx = 0, sy = 0;
+    for (const p of arr) { sx += p.x; sy += p.y; }
+    return { x: sx / arr.length, y: sy / arr.length };
+  }
+
+  function resize() {
+    DPR = Math.min(devicePixelRatio || 1, 1.55);
+    W = innerWidth; H = innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    starCountBase = Math.floor(clamp((W * H) / 3100, 180, 380));
+    initStars();
+    initGalaxies();
+    initDust();
+  }
 
   function initStars() {
     stars.length = 0;
-    const count = Math.floor(clamp((W * H) / 4800, 140, 280));
-    for (let i = 0; i < count; i++) {
-      const col = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
-      // Some stars are JWST-style (larger, with diffraction spikes)
-      const isJWST = Math.random() < 0.06;
+    for (let i = 0; i < starCountBase; i++) {
+      const x = rand(0, W), y = rand(0, H);
+      const col = pick(STAR_COLORS);
+      const bright = Math.random() < 0.07;
       stars.push({
-        x: rand(0, W), y: rand(0, H),
-        vx: rand(-.2, .2), vy: rand(-.2, .2),
-        ox: rand(0, W), oy: rand(0, H),
-        r: isJWST ? rand(1.6, 3.2) : rand(0.6, 2.0),
-        glow: rand(.3, 1),
+        x, y,
+        vx: rand(-0.16, 0.16), vy: rand(-0.16, 0.16),
+        ox: x + rand(-50, 50), oy: y + rand(-50, 50),
+        r: bright ? rand(1.3, 2.8) : rand(0.45, 1.7),
+        glow: rand(0.28, 1.0),
         phase: rand(0, Math.PI * 2),
-        mass: rand(.7, 1.7),
-        col: col,
-        isJWST: isJWST,
-        spikeAngle: rand(0, Math.PI / 6),
-        brightness: rand(0.6, 1.0),
+        mass: rand(0.7, 1.6),
+        col,
+        isBright: bright,
+        brightness: rand(0.68, 1.0),
+        twinkleSpeed: rand(1.5, 3.7)
       });
     }
   }
 
-  // Background galaxy smudges (Hubble deep field tiny galaxies)
   function initGalaxies() {
     galaxies.length = 0;
-    const count = Math.floor(clamp((W * H) / 18000, 40, 120));
+    const count = Math.floor(clamp((W * H) / 21000, 20, 55));
     for (let i = 0; i < count; i++) {
-      const col = NEBULA_COLS[Math.floor(Math.random() * NEBULA_COLS.length)];
       galaxies.push({
-        x: rand(0, W), y: rand(0, H),
-        rx: rand(4, 22), ry: rand(2, 8),
-        angle: rand(0, Math.PI),
-        col: col,
-        type: Math.floor(rand(0, 3)), // 0=elliptical, 1=spiral smudge, 2=lensed arc
+        x: rand(-20, W + 20), y: rand(-20, H + 20), rx: rand(5, 22), ry: rand(1.6, 7),
+        angle: rand(0, Math.PI), phase: rand(0, Math.PI * 2), drift: rand(0.04, 0.10),
+        col: pick(NEBULA_COLS), type: (Math.random() * 3) | 0
       });
     }
   }
 
-  // Pointer handling
-  canvas.addEventListener('pointerdown', e => {
-    canvas.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY });
-    modePulse = 1;
-    triggerModeFlash(pointers.size);
-  });
-  canvas.addEventListener('pointermove', e => {
-    const p = pointers.get(e.pointerId);
-    if (!p) return;
-    p.px = p.x; p.py = p.y;
-    p.x = e.clientX; p.y = e.clientY;
-    const speed = Math.hypot(p.x - p.px, p.y - p.py);
-    if (speed > 14) {
-      meteors.push({
-        x: p.x, y: p.y,
-        vx: (p.x - p.px) * .4, vy: (p.y - p.py) * .4,
-        life: 1,
-        col: getModeMeteorColor(pointers.size),
+  function initDust() {
+    dust.length = 0;
+    const count = Math.floor(clamp((W * H) / 14000, 36, 90));
+    for (let i = 0; i < count; i++) {
+      dust.push({
+        x: rand(0, W), y: rand(0, H), r: rand(18, 58), a: rand(0.005, 0.018), phase: rand(0, Math.PI * 2),
+        col: pick([[255,185,90], [110,155,255], [185,115,255], [255,232,170]])
       });
     }
-  });
-  function endPointer(e) { pointers.delete(e.pointerId); modePulse = 1; }
-  canvas.addEventListener('pointerup', endPointer);
-  canvas.addEventListener('pointercancel', endPointer);
-
-  function getModeMeteorColor(n) {
-    if (n === 1) return [255, 150, 80];
-    if (n === 2) return [160, 210, 255];
-    if (n === 3) return [190, 120, 255];
-    return [80, 255, 200];
   }
 
-  function triggerModeFlash(n) {
+  function triggerModeFlash(n, alpha = 1) {
     const colors = {
-      1: 'rgba(255,100,40,0.04)',
-      2: 'rgba(80,150,255,0.04)',
-      3: 'rgba(150,60,255,0.05)',
+      0: 'rgba(130,160,255,0.03)', 1: 'rgba(255,126,48,0.045)', 2: 'rgba(80,150,255,0.045)',
+      3: 'rgba(160,70,255,0.05)', 4: 'rgba(40,255,170,0.06)', 5: 'rgba(255,230,140,0.06)'
     };
-    flash.style.background = colors[n] || 'rgba(40,255,160,0.04)';
+    flash.style.background = colors[Math.min(n, 5)] || colors[5];
+    flash.style.opacity = String(alpha);
     flash.classList.add('active');
     setTimeout(() => flash.classList.remove('active'), 80);
   }
 
-  function centerOfTouches() {
-    const arr = [...pointers.values()];
-    if (!arr.length) return { x: W / 2, y: H / 2 };
-    return { x: arr.reduce((s, p) => s + p.x, 0) / arr.length, y: arr.reduce((s, p) => s + p.y, 0) / arr.length };
+  function setStatus(n) {
+    statusEl.innerHTML = `MODE <span>${MODE_LABELS[Math.min(n, 5)]}</span>`;
+    if (((time * 6) | 0) % 2 === 0) {
+      const ra = (3 + Math.sin(time * 0.06) * 0.08).toFixed(2);
+      const dec = (10 + Math.cos(time * 0.05) * 2.6).toFixed(1);
+      const z = (Math.min(n, 5) * 0.018 + Math.abs(Math.sin(time * 0.11)) * 0.004).toFixed(3);
+      coordsEl.innerHTML = `RA ${ra}h 32m 39s<br>DEC +00° ${dec}′ 15″<br>z = ${z}`;
+    }
   }
 
-  // Physics modes
+  function spawnShock(x, y, col, power = 1) {
+    const maxR = Math.max(W, H) * (0.20 + power * 0.22);
+    shockwaves.push({ x, y, r: 4, maxR, life: 1, speed: 8 + power * 3, width: 1.8 + power * 0.8, col });
+  }
+
+  function spawnSupernova(x, y, power = 1, col = [255,225,150], forced = false) {
+    if (!forced && supernovaCooldown > 0) return;
+    supernovaCooldown = 0.56;
+    spawnShock(x, y, col, power);
+    spawnShock(x, y, col, power * 1.2);
+    const amount = Math.floor(clamp(28 + power * 36, 34, 78));
+    for (let i = 0; i < amount; i++) {
+      const a = rand(0, Math.PI * 2);
+      const sp = rand(2.0, 6.8 + power * 4.8);
+      sparks.push({
+        x: x + Math.cos(a) * rand(0, 12), y: y + Math.sin(a) * rand(0, 12),
+        vx: Math.cos(a) * sp + rand(-0.4, 0.4), vy: Math.sin(a) * sp + rand(-0.4, 0.4),
+        life: rand(0.4, 0.95), r: rand(0.8, 2.1),
+        col: Math.random() < 0.6 ? [255, rand(170, 235), rand(90, 170)] : col, hot: Math.random() < 0.2
+      });
+    }
+    const reach = Math.max(W, H) * (0.18 + 0.18 * power);
+    for (const s of stars) {
+      const dx = s.x - x, dy = s.y - y;
+      const d = Math.hypot(dx, dy) + 1;
+      if (d < reach) {
+        const force = (1 - d / reach) * (4.2 + power * 3.2);
+        s.vx += dx / d * force;
+        s.vy += dy / d * force;
+        s.brightness = clamp(s.brightness + force * 0.06, 0.7, 1.5);
+      }
+    }
+    triggerModeFlash(Math.min(modeIndex(), 5), 1);
+  }
+
+  function spawnAutoComet() {
+    const fromLeft = Math.random() < 0.5;
+    const x = fromLeft ? rand(-40, W * 0.14) : rand(W * 0.86, W + 40);
+    const y = rand(0, H * 0.78);
+    const angle = fromLeft ? rand(0.18, 0.62) : rand(Math.PI - 0.62, Math.PI - 0.18);
+    meteors.push({ x, y, vx: Math.cos(angle) * rand(55, 78), vy: Math.sin(angle) * rand(20, 34), life: 1.08, width: rand(1.1, 2.1), col: [255, rand(210, 245), rand(145, 220)], comet: true });
+  }
+
+  function pointerDown(e) {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY });
+    modePulse = 1;
+    triggerModeFlash(modeIndex());
+    const now = performance.now();
+    const dx = e.clientX - lastTapX, dy = e.clientY - lastTapY;
+    if (now - lastTapAt < 320 && Math.hypot(dx, dy) < 42) {
+      spawnSupernova(e.clientX, e.clientY, 1.18, [255, 226, 150], true);
+      lastTapAt = 0;
+    } else {
+      lastTapAt = now; lastTapX = e.clientX; lastTapY = e.clientY;
+    }
+  }
+
+  function pointerMove(e) {
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    p.px = p.x; p.py = p.y; p.x = e.clientX; p.y = e.clientY;
+    const speed = Math.hypot(p.x - p.px, p.y - p.py);
+    if (speed > 8) {
+      meteors.push({ x: p.x, y: p.y, vx: (p.x - p.px) * 3.2, vy: (p.y - p.py) * 3.2, life: 0.5, width: clamp(speed / 17, 0.8, 2.2), col: getModeColor(modeIndex()), comet: false });
+      if (Math.random() < 0.18) sparks.push({ x: p.x, y: p.y, vx: rand(-1.6, 1.6) + (p.x - p.px) * 0.16, vy: rand(-1.6, 1.6) + (p.y - p.py) * 0.16, life: rand(0.2, 0.5), r: rand(0.6, 1.2), col: getModeColor(modeIndex()), hot: false });
+    }
+  }
+
+  function pointerEnd(e) {
+    pointers.delete(e.pointerId);
+    modePulse = 1;
+    triggerModeFlash(modeIndex(), 0.65);
+  }
+
+  canvas.addEventListener('pointerdown', pointerDown);
+  canvas.addEventListener('pointermove', pointerMove);
+  canvas.addEventListener('pointerup', pointerEnd);
+  canvas.addEventListener('pointercancel', pointerEnd);
+
   function applyNoTouch(s, dt) {
-    s.vx += (s.ox - s.x) * .0006 * dt;
-    s.vy += (s.oy - s.y) * .0006 * dt;
-    s.vx += Math.cos(time * .4 + s.phase) * .0025 * dt;
-    s.vy += Math.sin(time * .33 + s.phase) * .0025 * dt;
+    s.vx += (s.ox - s.x) * 0.00046 * dt;
+    s.vy += (s.oy - s.y) * 0.00046 * dt;
+    s.vx += Math.cos(time * 0.32 + s.phase) * 0.0018 * dt;
+    s.vy += Math.sin(time * 0.28 + s.phase) * 0.0018 * dt;
   }
-
   function applyOneTouch(s, p, dt) {
-    // Warm gravitational pull — like Milky Way core glowing orange
     const dx = p.x - s.x, dy = p.y - s.y;
     const d = Math.hypot(dx, dy) + 1;
-    const pull = clamp(280 / d, .1, 4.0);
-    const orbit = 1.3;
-    s.vx += (dx / d) * pull * .032 * dt + (-dy / d) * orbit * .016 * dt;
-    s.vy += (dy / d) * pull * .032 * dt + ( dx / d) * orbit * .016 * dt;
+    const pull = clamp(300 / d, 0.08, 4.2);
+    const swirl = 1.15 + Math.sin(time + s.phase) * 0.22;
+    s.vx += (dx / d) * pull * 0.030 * dt + (-dy / d) * swirl * 0.016 * dt;
+    s.vy += (dy / d) * pull * 0.030 * dt + ( dx / d) * swirl * 0.016 * dt;
   }
-
-  function applyTwoTouches(s, arr, dt) {
-    // Binary star orbit — cool blue JWST style
+  function applyTwoTouches(s, arr, dt, i) {
     const a = arr[0], b = arr[1];
-    const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
-    const dist = Math.hypot(b.x - a.x, b.y - a.y) || 100;
-    const angle = Math.atan2(b.y - a.y, b.x - a.x);
-    const ring = dist * .42 + 50 + (s.phase % 1) * 30;
-    const theta = angle + time * (0.65 + s.mass * .12) + s.phase;
-    const tx = cx + Math.cos(theta) * ring;
-    const ty = cy + Math.sin(theta) * ring * .6;
-    s.vx += (tx - s.x) * .0022 * dt;
-    s.vy += (ty - s.y) * .0022 * dt;
+    const da = Math.hypot(s.x - a.x, s.y - a.y), db = Math.hypot(s.x - b.x, s.y - b.y);
+    const anchor = da < db ? a : b, other = anchor === a ? b : a;
+    const midX = (a.x + b.x) * 0.5, midY = (a.y + b.y) * 0.5;
+    const linkDist = Math.hypot(a.x - b.x, a.y - b.y) + 1;
+    const orbitR = clamp(linkDist * 0.28 + 32 + (i % 10) * 4.5, 26, 120);
+    const baseAngle = Math.atan2(other.y - anchor.y, other.x - anchor.x);
+    const theta = baseAngle + time * (0.65 + (i % 7) * 0.03) + s.phase;
+    const tx = anchor.x + Math.cos(theta) * orbitR;
+    const ty = anchor.y + Math.sin(theta) * orbitR * 0.6;
+    const bx = midX + Math.cos(s.phase + time * 0.7) * 14;
+    const by = midY + Math.sin(s.phase + time * 0.7) * 14;
+    const mix = (i % 4 === 0) ? 0.55 : 0.0;
+    s.vx += ((tx * (1 - mix) + bx * mix) - s.x) * 0.0022 * dt;
+    s.vy += ((ty * (1 - mix) + by * mix) - s.y) * 0.0022 * dt;
   }
-
-  function applyThreeTouches(s, arr, dt) {
-    // Galaxy spiral — purple nebula style
+  function applyThreeTouches(s, arr, dt, i) {
     const c = centerOfTouches();
-    const dx = s.x - c.x, dy = s.y - c.y;
-    const d = Math.hypot(dx, dy) + 1;
-    const arm = Math.sin(d * .022 - time * 2.0 + s.phase) * 38;
-    const theta = Math.atan2(dy, dx) + .026 * dt;
-    const targetR = clamp(d * .988 + arm * .04, 30, Math.max(W, H) * .52);
-    const tx = c.x + Math.cos(theta + arm * .012) * targetR;
-    const ty = c.y + Math.sin(theta + arm * .012) * targetR;
-    s.vx += (tx - s.x) * .002 * dt;
-    s.vy += (ty - s.y) * .002 * dt;
-    s.vx += (-dy / d) * .042 * dt;
-    s.vy += ( dx / d) * .042 * dt;
+    const vertex = arr[i % 3], next = arr[(i + 1) % 3];
+    const t = 0.5 + Math.sin(time * 0.95 + s.phase) * 0.28;
+    const edgeX = vertex.x * (1 - t) + next.x * t, edgeY = vertex.y * (1 - t) + next.y * t;
+    const toCdx = s.x - c.x, toCdy = s.y - c.y;
+    const d = Math.hypot(toCdx, toCdy) + 1;
+    const swirlX = c.x + Math.cos(Math.atan2(toCdy, toCdx) + 0.022 * dt) * Math.max(26, d * 0.97);
+    const swirlY = c.y + Math.sin(Math.atan2(toCdy, toCdx) + 0.022 * dt) * Math.max(26, d * 0.97);
+    const mix = (i % 5 === 0) ? 0.65 : 0.25;
+    const tx = edgeX * mix + swirlX * (1 - mix), ty = edgeY * mix + swirlY * (1 - mix);
+    s.vx += (tx - s.x) * 0.00205 * dt;
+    s.vy += (ty - s.y) * 0.00205 * dt;
+    s.vx += (-toCdy / d) * 0.028 * dt; s.vy += ( toCdx / d) * 0.028 * dt;
   }
-
   function applyFourTouches(s, arr, dt, i) {
-    // Supernova / deep field burst
     const c = centerOfTouches();
-    const pts = 8;
-    const k = i % pts;
-    const base = -Math.PI / 2 + k * Math.PI * 2 / pts;
-    const radius = 60 + (i % 22) * 8 + Math.sin(time * 1.3 + i) * 22;
-    const tx = c.x + Math.cos(base + time * .16) * radius + Math.cos(i * 8.7) * 26;
-    const ty = c.y + Math.sin(base + time * .16) * radius + Math.sin(i * 6.9) * 26;
-    s.vx += (tx - s.x) * .003 * dt;
-    s.vy += (ty - s.y) * .003 * dt;
+    const dx = s.x - c.x, dy = s.y - c.y, d = Math.hypot(dx, dy) + 1;
+    const ringR = 86 + (i % 16) * 5 + Math.sin(time * 1.35 + i * 0.4) * 12;
+    const theta = Math.atan2(dy, dx) + 0.028 * dt + (i % 6) * 0.02;
+    const tx = c.x + Math.cos(theta) * ringR, ty = c.y + Math.sin(theta) * ringR;
+    s.vx += (tx - s.x) * 0.0025 * dt; s.vy += (ty - s.y) * 0.0025 * dt;
+    if (d < 40) { s.vx += (dx / d) * 0.012 * dt; s.vy += (dy / d) * 0.012 * dt; }
+  }
+  function applyFiveTouches(s, arr, dt, i) {
+    const c = centerOfTouches();
+    const k = 5 + (i % 3), base = -Math.PI / 2 + (i % 18) * (Math.PI * 2 / 18);
+    const petal = 70 + Math.sin(base * k + time * 1.2) * 32;
+    const crown = 118 + petal, theta = base + time * 0.18;
+    const tx = c.x + Math.cos(theta) * crown * 0.52, ty = c.y + Math.sin(theta) * crown * 0.52;
+    s.vx += (tx - s.x) * 0.00225 * dt; s.vy += (ty - s.y) * 0.00225 * dt;
+  }
+
+  function updateQuality(dt) {
+    avgDt = avgDt * 0.92 + dt * 0.08;
+    if (avgDt > 24) qualityScale = Math.max(0.78, qualityScale - 0.01);
+    else if (avgDt < 18) qualityScale = Math.min(1, qualityScale + 0.008);
+    connectionDistance = (72 + modePulse * 18 + (modeIndex() >= 3 ? 8 : 0)) * qualityScale;
   }
 
   function update(dt) {
+    const step = dt / 16.6667;
     time += dt / 1000;
-    modePulse *= .93;
+    modePulse *= Math.pow(0.935, step);
+    supernovaCooldown = Math.max(0, supernovaCooldown - dt / 1000);
+    autoCometTimer -= dt / 1000;
+    updateQuality(dt);
+
     const arr = [...pointers.values()];
-    const n = arr.length;
+    const n = modeIndex();
+    setStatus(n);
+
+    if (n !== prevTouchCount) {
+      modePulse = 1;
+      const c = centerOfTouches();
+      if (n === 4) spawnSupernova(c.x, c.y, 0.8, [100, 255, 205], true);
+      if (n >= 5) spawnSupernova(c.x, c.y, 1.0, [255, 235, 158], true);
+      prevTouchCount = n;
+    }
+    if (n === 0 && autoCometTimer <= 0) {
+      autoCometTimer = rand(4.8, 8.2);
+      if (Math.random() < 0.48) spawnAutoComet();
+    }
+
     for (let i = 0; i < stars.length; i++) {
       const s = stars[i];
       if (n === 0) applyNoTouch(s, dt);
       else if (n === 1) applyOneTouch(s, arr[0], dt);
-      else if (n === 2) applyTwoTouches(s, arr, dt);
-      else if (n === 3) applyThreeTouches(s, arr, dt);
-      else applyFourTouches(s, arr, dt, i);
+      else if (n === 2) applyTwoTouches(s, arr, dt, i);
+      else if (n === 3) applyThreeTouches(s, arr, dt, i);
+      else if (n === 4) applyFourTouches(s, arr, dt, i);
+      else applyFiveTouches(s, arr, dt, i);
 
-      s.vx *= Math.pow(.984, dt);
-      s.vy *= Math.pow(.984, dt);
-      const maxV = 7;
+      s.vx *= Math.pow(0.984, step);
+      s.vy *= Math.pow(0.984, step);
+      const maxV = n >= 4 ? 7.8 : 6.8;
       const v = Math.hypot(s.vx, s.vy);
       if (v > maxV) { s.vx = s.vx / v * maxV; s.vy = s.vy / v * maxV; }
-      s.x += s.vx * dt * .055;
-      s.y += s.vy * dt * .055;
+      s.x += s.vx * dt * 0.058; s.y += s.vy * dt * 0.058;
+      s.brightness += (1 - s.brightness) * 0.015 * step;
       if (s.x < -40) s.x = W + 40; if (s.x > W + 40) s.x = -40;
       if (s.y < -40) s.y = H + 40; if (s.y > H + 40) s.y = -40;
     }
 
+    for (const g of galaxies) {
+      g.x += Math.cos(time * 0.03 + g.phase) * g.drift * 0.05 * step;
+      g.y += Math.sin(time * 0.025 + g.phase) * g.drift * 0.05 * step;
+    }
     for (let i = meteors.length - 1; i >= 0; i--) {
       const m = meteors[i];
-      m.x += m.vx * dt * .05; m.y += m.vy * dt * .05;
-      m.life -= dt * .0016;
+      m.x += m.vx * dt * 0.018; m.y += m.vy * dt * 0.018;
+      m.life -= dt * (m.comet ? 0.00075 : 0.0022);
       if (m.life <= 0) meteors.splice(i, 1);
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const sp = sparks[i];
+      sp.x += sp.vx * dt * 0.06; sp.y += sp.vy * dt * 0.06;
+      sp.vx *= Math.pow(0.988, step); sp.vy *= Math.pow(0.988, step);
+      sp.life -= dt * 0.0019;
+      if (sp.life <= 0) sparks.splice(i, 1);
+    }
+    for (let i = shockwaves.length - 1; i >= 0; i--) {
+      const sw = shockwaves[i];
+      sw.r += sw.speed * step; sw.life = 1 - sw.r / sw.maxR;
+      if (sw.life <= 0) shockwaves.splice(i, 1);
+    }
+
+    if (meteors.length > 40) meteors.splice(0, meteors.length - 40);
+    if (sparks.length > 220) sparks.splice(0, sparks.length - 220);
+    if (shockwaves.length > 10) shockwaves.splice(0, shockwaves.length - 10);
+  }
+
+  function buildGrid() {
+    grid.clear();
+    const cell = connectionDistance;
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+      const cx = Math.floor(s.x / cell), cy = Math.floor(s.y / cell);
+      const key = cx + ',' + cy;
+      let bucket = grid.get(key);
+      if (!bucket) { bucket = []; grid.set(key, bucket); }
+      bucket.push(i);
     }
   }
 
-  // ─── Drawing ─────────────────────────────────────────────────────────
-
   function drawBackground() {
-    // Multi-layer deep space — inspired by Milky Way photo gradient
-    const n = pointers.size;
-
-    // Base deep black
+    const n = modeIndex();
+    ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000005';
     ctx.fillRect(0, 0, W, H);
-
-    // Milky Way band nebula glow — shifts color by mode
-    const nebulaColors = {
-      0: ['rgba(20,10,40,0.9)', 'rgba(10,5,25,0.7)', 'rgba(5,2,12,0)'],
-      1: ['rgba(60,25,10,0.55)', 'rgba(30,12,5,0.3)', 'rgba(5,2,0,0)'],   // warm orange (1 touch)
-      2: ['rgba(8,18,55,0.55)', 'rgba(4,10,30,0.3)', 'rgba(0,2,8,0)'],    // deep blue (2 touch)
-      3: ['rgba(30,8,60,0.55)', 'rgba(15,4,35,0.3)', 'rgba(5,0,12,0)'],   // purple (3 touch)
-      4: ['rgba(5,40,30,0.5)', 'rgba(2,20,15,0.25)', 'rgba(0,5,3,0)'],    // teal (4 touch)
+    const modeBg = {
+      0: ['rgba(18,11,40,0.90)', 'rgba(8,4,24,0.60)', 'rgba(4,2,12,0)'],
+      1: ['rgba(72,26,8,0.52)', 'rgba(34,13,4,0.30)', 'rgba(5,2,0,0)'],
+      2: ['rgba(8,18,58,0.58)', 'rgba(4,11,34,0.30)', 'rgba(0,2,8,0)'],
+      3: ['rgba(34,8,66,0.58)', 'rgba(16,4,38,0.30)', 'rgba(5,0,12,0)'],
+      4: ['rgba(6,44,34,0.52)', 'rgba(2,22,17,0.26)', 'rgba(0,5,3,0)'],
+      5: ['rgba(72,60,18,0.48)', 'rgba(35,28,8,0.22)', 'rgba(5,5,0,0)']
     };
-    const nc = nebulaColors[Math.min(n, 4)];
+    const nc = modeBg[n];
+    const bx = W * 0.5 + Math.sin(time * 0.04) * W * 0.05;
+    const by = H * 0.5 + Math.cos(time * 0.03) * H * 0.04;
+    const g = ctx.createRadialGradient(bx, by, 0, bx, by, Math.max(W, H) * 0.72);
+    g.addColorStop(0, nc[0]); g.addColorStop(0.52, nc[1]); g.addColorStop(1, nc[2]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
-    // Diagonal milky way band
-    const bx = W * 0.5 + Math.sin(time * 0.04) * W * 0.04;
-    const by = H * 0.5 + Math.cos(time * 0.03) * H * 0.03;
-    const g1 = ctx.createRadialGradient(bx, by, 0, bx, by, Math.max(W, H) * 0.75);
-    g1.addColorStop(0, nc[0]);
-    g1.addColorStop(0.5, nc[1]);
-    g1.addColorStop(1, nc[2]);
-    ctx.fillStyle = g1;
-    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(W * 0.5, H * 0.5);
+    ctx.rotate(-0.56 + Math.sin(time * 0.024) * 0.02);
+    const band = ctx.createLinearGradient(0, -H * 0.55, 0, H * 0.55);
+    band.addColorStop(0, 'rgba(0,0,0,0)'); band.addColorStop(0.38, 'rgba(120,150,255,0.02)'); band.addColorStop(0.50, 'rgba(255,210,120,0.028)'); band.addColorStop(0.62, 'rgba(120,150,255,0.018)'); band.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = band; ctx.fillRect(-W, -H, W * 2, H * 2);
+    ctx.restore();
+  }
 
-    // Horizon glow (like photo 1 — orange/amber at bottom)
-    if (n === 0 || n === 1) {
-      const hg = ctx.createLinearGradient(0, H * 0.7, 0, H);
-      hg.addColorStop(0, 'rgba(0,0,0,0)');
-      hg.addColorStop(0.6, 'rgba(40,15,5,0.18)');
-      hg.addColorStop(1, 'rgba(80,25,5,0.35)');
-      ctx.fillStyle = hg;
-      ctx.fillRect(0, 0, W, H);
+  function drawDust() {
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < dust.length * qualityScale; i++) {
+      const d = dust[i | 0];
+      if (!d) break;
+      const pulse = 0.82 + Math.sin(time * 0.22 + d.phase) * 0.18;
+      const [r, g, b] = d.col;
+      const gr = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.r * pulse);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${d.a * 1.2})`);
+      gr.addColorStop(0.56, `rgba(${r},${g},${b},${d.a * 0.28})`);
+      gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x, d.y, d.r * pulse, 0, Math.PI * 2); ctx.fill();
     }
   }
 
   function drawGalaxies() {
-    // Tiny background galaxy smudges — Hubble deep field style
-    for (const g of galaxies) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < galaxies.length * qualityScale; i++) {
+      const g = galaxies[i | 0];
+      if (!g) break;
       ctx.save();
-      ctx.translate(g.x, g.y);
-      ctx.rotate(g.angle);
-      const [r, gv, b, a] = g.col;
-
+      ctx.translate(g.x, g.y); ctx.rotate(g.angle + Math.sin(time * 0.03 + g.phase) * 0.03);
+      const [r, gg, b, a] = g.col;
       if (g.type === 2) {
-        // Gravitational lensed arc (JWST style)
-        ctx.beginPath();
-        ctx.arc(0, 0, g.rx, -0.6, 0.6);
-        ctx.strokeStyle = `rgba(${r},${gv},${b},${a * 1.4})`;
-        ctx.lineWidth = g.ry * 0.5;
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, g.rx, -0.7, 0.7);
+        ctx.strokeStyle = `rgba(${r},${gg},${b},${a * 1.15})`;
+        ctx.lineWidth = Math.max(0.7, g.ry * 0.4); ctx.stroke();
       } else {
-        // Elliptical / spiral smudge
-        const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, g.rx);
-        gg.addColorStop(0, `rgba(${r},${gv},${b},${a * 2.5})`);
-        gg.addColorStop(1, `rgba(${r},${gv},${b},0)`);
-        ctx.fillStyle = gg;
-        ctx.scale(1, g.ry / g.rx);
-        ctx.beginPath();
-        ctx.arc(0, 0, g.rx, 0, Math.PI * 2);
-        ctx.fill();
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, g.rx);
+        grad.addColorStop(0, `rgba(${r},${gg},${b},${a * 2.3})`); grad.addColorStop(0.42, `rgba(${r},${gg},${b},${a})`); grad.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+        ctx.fillStyle = grad; ctx.scale(1, g.ry / g.rx); ctx.beginPath(); ctx.arc(0, 0, g.rx, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
   }
 
-  function drawConnections() {
-    const n = pointers.size;
-    // Connection color by mode
-    const lineColors = {
-      0: [180, 200, 255],
-      1: [255, 160, 80],
-      2: [120, 180, 255],
-      3: [180, 100, 255],
-      4: [80, 255, 180],
-    };
-    const lc = lineColors[Math.min(n, 4)];
-    const maxDist = 85 + modePulse * 30;
+  function drawModeField() {
+    const arr = [...pointers.values()];
+    const n = modeIndex();
+    if (!n) return;
+    const [r, g, b] = getModeColor(n);
+    ctx.globalCompositeOperation = 'lighter';
+    if (n === 2 && arr.length >= 2) {
+      const a = arr[0], c = arr[1];
+      ctx.lineWidth = 1.2;
+      const grad = ctx.createLinearGradient(a.x, a.y, c.x, c.y);
+      grad.addColorStop(0, `rgba(${r},${g},${b},0.10)`); grad.addColorStop(0.5, `rgba(255,255,255,0.20)`); grad.addColorStop(1, `rgba(${r},${g},${b},0.10)`);
+      ctx.strokeStyle = grad; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+    }
+    if (n === 3 && arr.length >= 3) {
+      ctx.fillStyle = `rgba(${r},${g},${b},0.035)`; ctx.strokeStyle = `rgba(${r},${g},${b},0.10)`; ctx.lineWidth = 1.0;
+      ctx.beginPath(); ctx.moveTo(arr[0].x, arr[0].y); ctx.lineTo(arr[1].x, arr[1].y); ctx.lineTo(arr[2].x, arr[2].y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    if (n === 4) {
+      const c = centerOfTouches();
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.15)`; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(c.x, c.y, 92 + Math.sin(time * 2.3) * 8, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (n >= 5) {
+      const c = centerOfTouches();
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.12)`; ctx.lineWidth = 1.0;
+      for (let i = 0; i < 6; i++) {
+        const ang = -Math.PI / 2 + i * Math.PI * 2 / 6 + time * 0.18;
+        const x = c.x + Math.cos(ang) * 76, y = c.y + Math.sin(ang) * 76;
+        ctx.beginPath(); ctx.arc(x, y, 28, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+  }
 
-    ctx.lineWidth = 0.7;
+  function drawConnections() {
+    buildGrid();
+    const n = modeIndex();
+    const [r, g, b] = getModeColor(n);
+    const maxDist = connectionDistance;
+    const maxDistSq = maxDist * maxDist;
+    const cell = maxDist;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineWidth = 0.55;
     for (let i = 0; i < stars.length; i++) {
       const a = stars[i];
-      for (let j = i + 1; j < Math.min(stars.length, i + 32); j++) {
-        const b = stars[j];
-        const dx = a.x - b.x, dy = a.y - b.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < maxDist * maxDist) {
-          const alpha = (1 - Math.sqrt(d2) / maxDist) * 0.22 * (a.brightness + b.brightness) * 0.5;
-          ctx.strokeStyle = `rgba(${lc[0]},${lc[1]},${lc[2]},${alpha})`;
-          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      const cx = Math.floor(a.x / cell), cy = Math.floor(a.y / cell);
+      for (let oy = -1; oy <= 1; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
+          const bucket = grid.get((cx + ox) + ',' + (cy + oy));
+          if (!bucket) continue;
+          for (let bi = 0; bi < bucket.length; bi++) {
+            const j = bucket[bi];
+            if (j <= i) continue;
+            const bb = stars[j];
+            const dx = a.x - bb.x, dy = a.y - bb.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < maxDistSq) {
+              const alpha = (1 - Math.sqrt(d2) / maxDist) * 0.15 * (a.brightness + bb.brightness) * 0.5;
+              ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(bb.x, bb.y); ctx.stroke();
+            }
+          }
         }
       }
     }
   }
 
-  function drawDiffractionSpikes(x, y, r, col, alpha) {
-    // JWST 6-spike diffraction pattern
-    const spikeLen = r * 9;
-    const angles = [0, Math.PI / 3, Math.PI * 2 / 3];
-    ctx.lineWidth = r * 0.35;
-    for (const ang of angles) {
-      const grad = ctx.createLinearGradient(
-        x + Math.cos(ang) * spikeLen, y + Math.sin(ang) * spikeLen,
-        x - Math.cos(ang) * spikeLen, y - Math.sin(ang) * spikeLen
-      );
-      grad.addColorStop(0, `rgba(${col.r},${col.g},${col.b},0)`);
-      grad.addColorStop(0.45, `rgba(${col.r},${col.g},${col.b},${alpha * 0.7})`);
-      grad.addColorStop(0.5, `rgba(${col.r},${col.g},${col.b},${alpha})`);
-      grad.addColorStop(0.55, `rgba(${col.r},${col.g},${col.b},${alpha * 0.7})`);
-      grad.addColorStop(1, `rgba(${col.r},${col.g},${col.b},0)`);
-      ctx.strokeStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(x + Math.cos(ang) * spikeLen, y + Math.sin(ang) * spikeLen);
-      ctx.lineTo(x - Math.cos(ang) * spikeLen, y - Math.sin(ang) * spikeLen);
-      ctx.stroke();
-    }
-  }
-
-  function drawStars() {
-    for (const s of stars) {
-      const flicker = .7 + Math.sin(time * 2.8 + s.phase) * .2 + s.glow * .2;
-      const r = s.r * flicker * s.brightness;
-      const { r: cr, g: cg, b: cb } = s.col;
-
-      if (s.isJWST) {
-        // JWST bright star with diffraction spikes
-        const spikeAlpha = 0.45 + Math.sin(time * 1.5 + s.phase) * 0.1;
-        drawDiffractionSpikes(s.x, s.y, r, s.col, spikeAlpha);
-      }
-
-      // Outer glow halo
-      const glowR = r * (s.isJWST ? 10 : 6);
-      const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowR);
-      grad.addColorStop(0, `rgba(${cr},${cg},${cb},0.9)`);
-      grad.addColorStop(0.15, `rgba(${cr},${cg},${cb},0.4)`);
-      grad.addColorStop(0.5, `rgba(${cr},${cg},${cb},0.1)`);
-      grad.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(s.x, s.y, glowR, 0, Math.PI * 2); ctx.fill();
-
-      // Star core
-      ctx.fillStyle = `rgba(${Math.min(255, cr + 30)},${Math.min(255, cg + 30)},${Math.min(255, cb + 30)},0.97)`;
-      ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-
   function drawTouchAuras() {
     const arr = [...pointers.values()];
-    const n = arr.length;
-    const auraColors = {
-      1: [[255, 140, 60], [255, 80, 20]],
-      2: [[100, 180, 255], [60, 120, 255]],
-      3: [[200, 80, 255], [140, 40, 255]],
-      4: [[60, 255, 180], [20, 200, 140]],
-    };
-    const ac = auraColors[Math.min(n, 4)] || auraColors[4];
-
+    const n = modeIndex();
+    if (!n) return;
+    const [r, g, b] = getModeColor(n);
+    ctx.globalCompositeOperation = 'lighter';
     for (const p of arr) {
-      // Outer ring pulse
-      const pulse = 1 + modePulse * 0.4 + Math.sin(time * 3.5) * 0.07;
-      const outerR = 90 * pulse;
+      const outer = 64 + modePulse * 26 + (n >= 4 ? 12 : 0);
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, outer);
+      grad.addColorStop(0, `rgba(${r},${g},${b},0.18)`); grad.addColorStop(0.44, `rgba(${r},${g},${b},0.06)`); grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, outer, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(${r},${g},${b},${0.18 + modePulse * 0.14})`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(p.x, p.y, 20 + modePulse * 10, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(${r},${g},${b},0.72)`; ctx.beginPath(); ctx.arc(p.x, p.y, 2.3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
 
-      const g1 = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, outerR);
-      g1.addColorStop(0, `rgba(${ac[0][0]},${ac[0][1]},${ac[0][2]},0.18)`);
-      g1.addColorStop(0.4, `rgba(${ac[1][0]},${ac[1][1]},${ac[1][2]},0.07)`);
-      g1.addColorStop(1, `rgba(${ac[0][0]},${ac[0][1]},${ac[0][2]},0)`);
-      ctx.fillStyle = g1;
-      ctx.beginPath(); ctx.arc(p.x, p.y, outerR, 0, Math.PI * 2); ctx.fill();
-
-      // Reticle ring
-      ctx.strokeStyle = `rgba(${ac[0][0]},${ac[0][1]},${ac[0][2]},${0.3 + modePulse * 0.2})`;
-      ctx.lineWidth = 0.8;
-      ctx.setLineDash([5, 4]);
-      ctx.beginPath(); ctx.arc(p.x, p.y, 28 + modePulse * 15, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Center dot
-      ctx.fillStyle = `rgba(${ac[0][0]},${ac[0][1]},${ac[0][2]},0.65)`;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill();
+  function drawShockwaves() {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const sw of shockwaves) {
+      const [r, g, b] = sw.col;
+      const a = Math.max(0, sw.life);
+      ctx.lineWidth = sw.width + a * 0.8;
+      ctx.strokeStyle = `rgba(${r},${g},${b},${a * 0.22})`;
+      ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2); ctx.stroke();
     }
   }
 
   function drawMeteors() {
+    ctx.globalCompositeOperation = 'lighter';
     for (const m of meteors) {
-      const [cr, cg, cb] = m.col;
-      ctx.lineWidth = 1.5 * m.life;
-      const trail = 5;
-      const grad = ctx.createLinearGradient(
-        m.x, m.y,
-        m.x - m.vx * trail, m.y - m.vy * trail
-      );
-      grad.addColorStop(0, `rgba(${cr},${cg},${cb},${m.life * 0.8})`);
-      grad.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
-      ctx.strokeStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(m.x, m.y);
-      ctx.lineTo(m.x - m.vx * trail, m.y - m.vy * trail);
-      ctx.stroke();
+      const [r, g, b] = m.col;
+      const trail = m.comet ? 8 : 4.8;
+      const grad = ctx.createLinearGradient(m.x, m.y, m.x - m.vx * 0.1 * trail, m.y - m.vy * 0.1 * trail);
+      grad.addColorStop(0, `rgba(255,255,255,${m.life * 0.82})`); grad.addColorStop(0.2, `rgba(${r},${g},${b},${m.life * 0.65})`); grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.strokeStyle = grad; ctx.lineWidth = m.width * Math.max(0.25, m.life); ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - m.vx * 0.1 * trail, m.y - m.vy * 0.1 * trail); ctx.stroke();
+    }
+  }
+
+  function drawSparks() {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const sp of sparks) {
+      const [r, g, b] = sp.col; const a = Math.max(0, Math.min(1, sp.life)); const rr = sp.r * (sp.hot ? 1.9 : 1.3) * a;
+      const grad = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, rr * 4.2);
+      grad.addColorStop(0, `rgba(255,255,255,${a * 0.84})`); grad.addColorStop(0.3, `rgba(${r},${g},${b},${a * 0.42})`); grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(sp.x, sp.y, rr * 4.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawDiffractionSpikes(x, y, r, col, alpha) {
+    const len = r * 8.6;
+    const angles = [0, Math.PI / 3, Math.PI * 2 / 3];
+    ctx.lineWidth = Math.max(0.3, r * 0.32);
+    for (const ang of angles) {
+      const grad = ctx.createLinearGradient(x + Math.cos(ang) * len, y + Math.sin(ang) * len, x - Math.cos(ang) * len, y - Math.sin(ang) * len);
+      grad.addColorStop(0, `rgba(${col.r},${col.g},${col.b},0)`); grad.addColorStop(0.46, `rgba(${col.r},${col.g},${col.b},${alpha * 0.45})`); grad.addColorStop(0.5, `rgba(255,255,255,${alpha})`); grad.addColorStop(0.54, `rgba(${col.r},${col.g},${col.b},${alpha * 0.45})`); grad.addColorStop(1, `rgba(${col.r},${col.g},${col.b},0)`);
+      ctx.strokeStyle = grad; ctx.beginPath(); ctx.moveTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len); ctx.lineTo(x - Math.cos(ang) * len, y - Math.sin(ang) * len); ctx.stroke();
+    }
+  }
+
+  function drawStars() {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of stars) {
+      const flicker = 0.74 + Math.sin(time * s.twinkleSpeed + s.phase) * 0.14 + s.glow * 0.16;
+      const rr = s.r * flicker * s.brightness;
+      const { r, g, b } = s.col;
+      if (s.isBright || s.brightness > 1.22) {
+        drawDiffractionSpikes(s.x, s.y, rr, s.col, clamp(0.22 + (s.brightness - 0.9) * 0.25, 0.22, 0.65));
+        const glowR = rr * 9.2;
+        const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowR);
+        grad.addColorStop(0, 'rgba(255,255,255,0.94)'); grad.addColorStop(0.16, `rgba(${r},${g},${b},0.42)`); grad.addColorStop(0.52, `rgba(${r},${g},${b},0.10)`); grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(s.x, s.y, glowR, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = `rgba(${r},${g},${b},0.18)`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, rr * 2.8, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = `rgba(${Math.min(255, r + 35)},${Math.min(255, g + 35)},${Math.min(255, b + 35)},0.98)`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, Math.max(0.5, rr), 0, Math.PI * 2); ctx.fill();
     }
   }
 
   function frame(now) {
-    const dt = Math.min(32, now - last); last = now;
+    const dt = Math.min(34, now - last);
+    last = now;
     update(dt);
     drawBackground();
+    drawDust();
     drawGalaxies();
+    drawModeField();
     drawConnections();
+    drawShockwaves();
     drawTouchAuras();
     drawMeteors();
+    drawSparks();
     drawStars();
     requestAnimationFrame(frame);
   }
