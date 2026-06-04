@@ -840,6 +840,326 @@
       .subtitle, .small { font-size: 10px; margin: 7px 0; }
       .btn { padding: 12px; margin-top: 9px; }
     }
+  
+
+    /* MENU UI ONLY PATCH — ABYSS gameplay/scene stays original; only menu/result windows are restyled. */
+    .menu-overlay {
+      align-items: center;
+      justify-content: center;
+      padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
+      background:
+        radial-gradient(circle at 50% 18%, rgba(0,255,213,.16), rgba(102,217,255,.06) 28%, rgba(0,0,0,.84) 62%, rgba(0,0,0,.96)),
+        linear-gradient(180deg, rgba(3,5,10,.88), rgba(1,2,8,.96));
+    }
+    .menu-overlay::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 18% 15%, rgba(102,217,255,.18) 0 2px, transparent 3px),
+        radial-gradient(circle at 81% 18%, rgba(255,221,102,.16) 0 3px, transparent 4px),
+        radial-gradient(circle at 10% 70%, rgba(160,107,255,.13) 0 2px, transparent 3px),
+        linear-gradient(135deg, rgba(0,255,213,.06), transparent 42%, rgba(160,107,255,.06));
+      opacity: .9;
+    }
+    .arcade-menu-panel {
+      width: min(440px, calc(100vw - 24px));
+      max-height: calc(var(--vh) - 24px - var(--safe-top) - var(--safe-bottom));
+      padding: 14px 14px 16px;
+      border-radius: 34px;
+      border: 2px solid rgba(130, 240, 255, .35);
+      background:
+        linear-gradient(180deg, rgba(10, 25, 43, .94), rgba(4, 8, 18, .97) 72%, rgba(2, 4, 10, .99)),
+        radial-gradient(circle at 50% -18%, rgba(0,255,213,.20), transparent 46%);
+      box-shadow:
+        0 18px 0 rgba(0,0,0,.30),
+        0 28px 52px rgba(0,0,0,.52),
+        inset 0 0 0 2px rgba(255,255,255,.035),
+        inset 0 18px 32px rgba(255,255,255,.035);
+    }
+    .arcade-menu-panel::before {
+      inset: 9px;
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,.06);
+      background: linear-gradient(180deg, rgba(255,255,255,.026), transparent 38%);
+    }
+    .menu-topbar {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 44px 1fr 44px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .round-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(102,217,255,.30);
+      background: linear-gradient(180deg, rgba(13,32,51,.96), rgba(5,13,24,.94));
+      color: #eaffff;
+      font-weight: 950;
+      font-size: 17px;
+      box-shadow: 0 7px 0 rgba(0,0,0,.26), inset 0 0 16px rgba(255,255,255,.045);
+      pointer-events: none;
+    }
+    .arcade-menu-panel .eyebrow {
+      margin: 0;
+      padding: 9px 10px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,221,102,.16), rgba(255,221,102,.07));
+      border: 1px solid rgba(255,221,102,.28);
+      color: #ffe9a6;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 1.3px;
+      box-shadow: inset 0 0 14px rgba(255,255,255,.035);
+    }
+    .hero-badge {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 13px;
+      border-radius: 28px;
+      border: 1px solid rgba(102,217,255,.24);
+      background:
+        radial-gradient(circle at 28% 18%, rgba(0,255,213,.17), transparent 35%),
+        linear-gradient(180deg, rgba(12,31,51,.86), rgba(5,12,24,.76));
+      box-shadow: inset 0 0 18px rgba(255,255,255,.035), 0 12px 20px rgba(0,0,0,.22);
+    }
+    .hero-orb {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      color: #001014;
+      font-size: 34px;
+      font-weight: 1000;
+      background:
+        radial-gradient(circle at 35% 25%, #eaffff, #00ffd5 36%, #176aff 100%);
+      box-shadow: 0 10px 0 rgba(0,0,0,.26), 0 0 28px rgba(0,255,213,.26), inset 0 0 18px rgba(255,255,255,.42);
+      transform: rotate(-8deg);
+    }
+    .danger-orb {
+      background: radial-gradient(circle at 35% 25%, #fff3f7, #ff5d7a 36%, #88113a 100%);
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0,0,0,.28);
+      box-shadow: 0 10px 0 rgba(0,0,0,.26), 0 0 28px rgba(255,93,122,.26), inset 0 0 18px rgba(255,255,255,.42);
+    }
+    .arcade-menu-panel h1 {
+      text-align: left;
+      font-size: clamp(32px, 9vw, 52px);
+      letter-spacing: 3px;
+      margin: 0 0 6px;
+      line-height: .95;
+      color: #00ffd5;
+      text-shadow: 0 0 18px rgba(0,255,213,.70), 0 5px 0 rgba(0,0,0,.20);
+    }
+    .arcade-menu-panel .subtitle {
+      margin: 0;
+      text-align: left;
+      color: #b7dce5;
+      font-size: 11px;
+      line-height: 1.38;
+    }
+    .menu-record-row {
+      position: relative;
+      z-index: 1;
+      margin: 12px 0 8px;
+      gap: 8px;
+    }
+    .arcade-menu-panel .record-card,
+    .arcade-menu-panel .info,
+    .arcade-menu-panel .strip-item,
+    .arcade-menu-panel .record-note,
+    .arcade-menu-panel .upload-row,
+    .arcade-menu-panel .result-card {
+      border-radius: 20px;
+      border: 1px solid rgba(102,217,255,.20);
+      background: linear-gradient(180deg, rgba(8,20,35,.82), rgba(5,11,22,.70));
+      box-shadow: 0 8px 0 rgba(0,0,0,.20), inset 0 0 14px rgba(255,255,255,.032);
+    }
+    .arcade-menu-panel .record-card {
+      min-height: 62px;
+      padding: 10px 7px;
+    }
+    .arcade-menu-panel .record-label {
+      color: rgba(205,245,255,.70);
+      font-size: 9px;
+      letter-spacing: .8px;
+    }
+    .arcade-menu-panel .record-value {
+      color: #ffdd66;
+      font-size: 17px;
+      text-shadow: 0 0 12px rgba(255,221,102,.25);
+    }
+    .menu-strip {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .strip-item {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      min-height: 48px;
+    }
+    .strip-item span {
+      color: #8fefff;
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: 1px;
+    }
+    .strip-item b {
+      color: #eaffff;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: right;
+    }
+    .menu-copy-note {
+      position: relative;
+      z-index: 1;
+      margin: 8px 0 10px;
+      padding: 10px 12px;
+      color: #9ec8d2;
+      font-size: 10.5px;
+    }
+    .menu-card-stack {
+      position: relative;
+      z-index: 1;
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.025);
+      border: 1px solid rgba(255,255,255,.055);
+    }
+    .arcade-menu-panel .section-title {
+      margin: 8px 0 8px;
+      padding-left: 3px;
+      color: #dffdfb;
+      font-size: 10px;
+      letter-spacing: 1.1px;
+    }
+    .control-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin: 0;
+    }
+    .arcade-menu-panel .info {
+      min-height: 62px;
+      padding: 9px 7px;
+      text-align: center;
+      font-size: 10px;
+      color: #a8cbd3;
+    }
+    .arcade-menu-panel .info b {
+      color: #eaffff;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+    .avatar-rack {
+      margin: 8px 0 12px;
+      padding: 10px;
+      border-style: dashed;
+      justify-content: space-between;
+    }
+    .arcade-menu-panel .upload-btn {
+      border-radius: 18px;
+      min-height: 44px;
+      padding: 11px 14px;
+      background: linear-gradient(180deg, rgba(20,44,68,.92), rgba(8,20,35,.88));
+      border: 1px solid rgba(102,217,255,.26);
+      color: #eaffff;
+      box-shadow: 0 7px 0 rgba(0,0,0,.22), inset 0 0 12px rgba(255,255,255,.045);
+    }
+    .arcade-menu-panel .preview {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      border: 1px solid rgba(102,217,255,.24);
+      box-shadow: 0 7px 0 rgba(0,0,0,.20), inset 0 0 14px rgba(255,255,255,.035);
+    }
+    .play-btn {
+      position: relative;
+      z-index: 1;
+      min-height: 62px;
+      border-radius: 24px;
+      margin-top: 10px;
+      background: linear-gradient(180deg, #ffe275, #ffb52d 48%, #ff7d18) !important;
+      border: 2px solid rgba(255,246,196,.95) !important;
+      color: #1c0e00 !important;
+      text-shadow: 0 1px 0 rgba(255,255,255,.55) !important;
+      box-shadow: 0 10px 0 #8a3f0d, 0 18px 26px rgba(0,0,0,.32), inset 0 2px 0 rgba(255,255,255,.62) !important;
+    }
+    .play-btn span::before { content: "▶ "; }
+    .play-btn:active {
+      transform: translateY(4px) scale(.99);
+      box-shadow: 0 6px 0 #8a3f0d, 0 12px 18px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.62) !important;
+    }
+    .arcade-menu-panel .secondary-btn {
+      border-radius: 22px;
+      min-height: 50px;
+      background: linear-gradient(180deg, rgba(20,44,68,.95), rgba(9,17,28,.94)) !important;
+      border-color: rgba(102,217,255,.26) !important;
+      box-shadow: 0 8px 0 rgba(0,0,0,.25), 0 14px 20px rgba(0,0,0,.22), inset 0 0 14px rgba(255,255,255,.035) !important;
+      color: #eaffff !important;
+      text-shadow: none !important;
+    }
+    .arcade-menu-panel .small {
+      position: relative;
+      z-index: 1;
+      margin-top: 11px;
+      color: rgba(205,245,255,.52);
+      font-size: 10px;
+    }
+    .result-menu-panel .result-hero {
+      grid-template-columns: 72px 1fr;
+      margin-bottom: 12px;
+    }
+    .result-menu-panel #resultText {
+      text-align: left;
+    }
+    @media (max-width: 430px) {
+      .arcade-menu-panel {
+        width: min(420px, calc(100vw - 18px));
+        border-radius: 30px;
+        padding: 12px;
+      }
+      .hero-badge {
+        grid-template-columns: 66px 1fr;
+        gap: 10px;
+        padding: 12px;
+      }
+      .hero-orb {
+        width: 66px;
+        height: 66px;
+        border-radius: 21px;
+        font-size: 30px;
+      }
+      .control-grid { gap: 6px; }
+      .arcade-menu-panel .info { font-size: 9px; padding: 8px 5px; }
+      .strip-item { grid-template-columns: 80px 1fr; padding: 9px 10px; }
+    }
+    @media (orientation: landscape) and (max-height: 520px) {
+      .arcade-menu-panel { max-height: calc(100vh - 14px); padding: 10px; border-radius: 22px; }
+      .hero-badge { grid-template-columns: 56px 1fr; padding: 10px; }
+      .hero-orb { width: 56px; height: 56px; border-radius: 18px; font-size: 24px; }
+      .menu-record-row { margin: 8px 0 6px; }
+      .menu-copy-note, .avatar-rack { display: none; }
+      .play-btn { min-height: 48px; }
+    }
+
   </style>
 </head>
 <body>
@@ -867,50 +1187,78 @@
     <div class="hint-box">↓ 슬라이드</div>
   </div>
 
-  <div id="startLayer" class="overlay">
-    <div class="panel">
-      <div class="eyebrow">VOID RUNNER · POLISHED BUILD</div>
-      <h1>ABYSS RUN</h1>
-      <div class="subtitle">세로형 3D 레인 러너 · V8 POLISHED<br>3차선 · 스와이프 · 점프 · 슬라이드 · 러쉬 모드 · 보스 추격 · 픽셀 심연 도시</div>
-      <div class="panel-divider"></div>
-      <div class="record-row">
+  <div id="startLayer" class="overlay menu-overlay">
+    <div class="panel arcade-menu-panel">
+      <div class="menu-topbar">
+        <button class="round-icon" type="button" aria-label="settings">⚙</button>
+        <div class="eyebrow">VOID RUNNER · ARCADE MENU</div>
+        <button class="round-icon" type="button" aria-label="records">🏆</button>
+      </div>
+
+      <div class="hero-badge">
+        <div class="hero-orb">◆</div>
+        <div>
+          <h1>ABYSS RUN</h1>
+          <div class="subtitle">세로형 3D 레인 러너 · V8 POLISHED<br>3차선 · 스와이프 · 점프 · 슬라이드 · 러쉬 모드 · 보스 추격 · 픽셀 심연 도시</div>
+        </div>
+      </div>
+
+      <div class="record-row menu-record-row">
         <div class="record-card"><div class="record-label">보유 코인</div><div id="lifetimeCoinText" class="record-value">0</div></div>
         <div class="record-card"><div class="record-label">최고 거리</div><div id="bestDistanceText" class="record-value">0m</div></div>
         <div class="record-card"><div class="record-label">최고 점수</div><div id="bestScoreText" class="record-value">0</div></div>
       </div>
-      <div class="record-note">영구 강화/스킨 없음. 모든 판은 같은 조건에서 시작하고, 코인은 기록/정산용으로만 저장됩니다.</div>
-      <div id="dailyBox" class="daily-box">DAILY CHALLENGE</div>
-      <div id="achievementLine" class="achievement-line">업적 0/0</div>
-      <div class="section-title">CONTROLS</div>
-      <div class="info-grid">
-        <div class="info"><b>좌/우 스와이프</b><br>차선 이동</div>
-        <div class="info"><b>위 스와이프</b><br>점프</div>
-        <div class="info"><b>아래 스와이프</b><br>슬라이드</div>
-        <div class="info"><b>PC 테스트</b><br>방향키 / WASD</div>
+
+      <div class="menu-strip">
+        <div class="strip-item"><span>DAILY</span><b id="dailyBox">DAILY CHALLENGE</b></div>
+        <div class="strip-item"><span>ACHIEVEMENT</span><b id="achievementLine">업적 0/0</b></div>
       </div>
+
+      <div class="record-note menu-copy-note">영구 강화/스킨 없음. 모든 판은 같은 조건에서 시작하고, 코인은 기록/정산용으로만 저장됩니다.</div>
+
+      <div class="menu-card-stack">
+        <div class="section-title">CONTROLS</div>
+        <div class="info-grid control-grid">
+          <div class="info"><b>← →</b><br>차선 이동</div>
+          <div class="info"><b>↑</b><br>점프</div>
+          <div class="info"><b>↓</b><br>슬라이드</div>
+          <div class="info"><b>WASD</b><br>PC 테스트</div>
+        </div>
+      </div>
+
       <div class="section-title">PLAYER EMBLEM</div>
-      <div class="upload-row">
+      <div class="upload-row avatar-rack">
         <label class="upload-btn">초상 업로드<input id="avatarInput" type="file" accept="image/*"></label>
         <img id="avatarPreview" class="preview" alt="avatar preview">
       </div>
-      <button id="startButton" class="btn">START RUN</button>
+
+      <button id="startButton" class="btn play-btn"><span>START RUN</span></button>
       <div id="loadError"></div>
-      <div class="small">v8: 메뉴, HUD, 결과창, 배경 연출을 다듬어 전체 완성도를 끌어올렸습니다.</div>
+      <div class="small">메뉴 UI만 둥근 모바일 아케이드식으로 재구성했습니다. 게임 화면·맵·캐릭터·밸런스는 ABYSS RUN 원본 구조를 유지합니다.</div>
     </div>
   </div>
 
-  <div id="gameOverLayer" class="overlay">
-    <div class="panel">
-      <div class="eyebrow">RUN COMPLETE</div>
-      <h1 style="font-size:clamp(30px,9vw,48px)">GAME OVER</h1>
-      <div id="resultText" class="subtitle">결과</div>
-      <button id="restartButton" class="btn">RUN AGAIN</button>
+  <div id="gameOverLayer"  <div id="gameOverLayer" class="overlay menu-overlay">
+    <div class="panel arcade-menu-panel result-menu-panel">
+      <div class="menu-topbar">
+        <button class="round-icon" type="button" aria-label="share">↗</button>
+        <div class="eyebrow">RUN COMPLETE</div>
+        <button class="round-icon" type="button" aria-label="stats">★</button>
+      </div>
+      <div class="hero-badge result-hero">
+        <div class="hero-orb danger-orb">×</div>
+        <div>
+          <h1 style="font-size:clamp(30px,9vw,48px)">GAME OVER</h1>
+          <div id="resultText" class="subtitle">결과</div>
+        </div>
+      </div>
+      <button id="restartButton" class="btn play-btn"><span>RUN AGAIN</span></button>
       <button id="menuButton" class="btn secondary-btn">MENU</button>
       <div class="small">적용 구조: 3D 러너 시스템 위에 기존 2D 스프라이트 에셋을 빌보드 방식으로 결합.</div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src=  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script>
   (() => {
     "use strict";
